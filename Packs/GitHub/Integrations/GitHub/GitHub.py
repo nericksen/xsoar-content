@@ -5,6 +5,7 @@ from CommonServerUserPython import *
 ''' IMPORTS '''
 
 import json
+import base64
 import requests
 from typing import Union, Any
 from datetime import datetime
@@ -28,6 +29,7 @@ USER_SUFFIX = '/repos/{}/{}'.format(USER, REPOSITORY)
 ISSUE_SUFFIX = USER_SUFFIX + '/issues'
 RELEASE_SUFFIX = USER_SUFFIX + '/releases'
 PULLS_SUFFIX = USER_SUFFIX + '/pulls'
+CONTENT_SUFFIX = USER_SUFFIX + '/contents'
 
 RELEASE_HEADERS = ['ID', 'Name', 'Download_count', 'Body', 'Created_at', 'Published_at']
 ISSUE_HEADERS = ['ID', 'Repository', 'Title', 'State', 'Body', 'Created_at', 'Updated_at', 'Closed_at', 'Closed_by',
@@ -947,6 +949,65 @@ def get_branch_command():
     human_readable = tableToMarkdown(f'Branch "{branch_name}"', ec_object, removeNull=True)
     return_outputs(readable_output=human_readable, outputs=ec, raw_response=response)
 
+def update_github_repo_contents(path: str, msg: str, content: str, sha: str) -> dict:
+    suffix = CONTENT_SUFFIX + f'/{path}'
+    params = None
+    encoded = base64.b64encode(bytearray(content, "utf-8")).decode()
+    data = {
+        'message': msg,
+        'content': encoded,
+        'sha': sha
+    }
+    response = http_request('PUT', url_suffix=suffix, data=data)
+    return response
+
+
+def update_github_repo_contents_command():
+    args = demisto.args()
+    path = args.get('path')
+    msg = args.get('msg')
+    content = args.get('content')
+    sha = args.get('sha')
+
+    res = update_github_repo_contents(path, msg, content, sha)
+    msg = str(res)
+    demisto.results(msg)
+ 
+
+def get_repo_contents(path: str, ref: str) -> dict:
+    suffix = CONTENT_SUFFIX + f'/{path}'
+    params = None
+
+    if ref:
+        params = { 'ref': ref }
+
+    response = http_request('GET', url_suffix=suffix, params=params)
+    return response
+
+
+def get_github_repo_contents_command():
+    args = demisto.args()
+    path = args.get('path')
+    ref = args.get('ref')
+
+    res = get_repo_contents(path, ref)
+    if type(res) is list:
+      msg = str(res)
+    else:
+      msg = base64.b64decode(res['content'])
+    entry = {
+      "raw": res,
+      "data": str(msg)
+    }
+    command_result = CommandResults(
+        outputs_prefix='GitHub',
+        outputs_key_field='Content',
+        outputs=entry
+    )
+    return_results(command_result)
+
+    #demisto.results(str(res))
+
 
 def create_branch(name: str, sha: str) -> dict:
     suffix = USER_SUFFIX + '/git/refs'
@@ -1284,6 +1345,8 @@ COMMANDS = {
     'GitHub-is-pr-merged': is_pr_merged_command,
     'GitHub-create-pull-request': create_pull_request_command,
     'Github-get-github-actions-usage': get_github_actions_usage,
+    'Github-get-repo-contents': get_github_repo_contents_command,
+    'Github-update-repo-contents': update_github_repo_contents_command
 }
 
 '''EXECUTION'''

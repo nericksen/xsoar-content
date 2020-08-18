@@ -56,6 +56,44 @@ script:
   commands:
   - arguments:
     - default: false
+      isArray: false
+      name: sha 
+      required: true
+      description: SHA256 hash of current file
+      secret: false
+    - default: false
+      isArray: false
+      name: msg
+      required: true
+      description: The commit message
+      secret: false
+    - default: false
+      isArray: false
+      name: content
+      required: true
+      description: the content of the file
+      secret: false
+    - default: false
+      isArray: false
+      name: path
+      description: The path to the file in the GitHub repository
+      required: true
+      secret: false
+    name: Github-update-repo-contents
+    description: Update a file or create one.
+    deprecated: false
+  - arguments:
+    - default: false
+      isArray: false
+      name: path
+      description: the path to the file in the repo
+      required: true
+      secret: false
+    name: Github-get-repo-contents
+    description: Get the contents of a repo file or directory
+    deprecated: false
+  - arguments:
+    - default: false
       description: The title of the issue.
       isArray: false
       name: title
