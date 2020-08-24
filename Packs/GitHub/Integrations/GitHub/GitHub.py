@@ -20,7 +20,7 @@ TOKEN = demisto.params().get('token', '')
 PRIVATE_KEY = demisto.params().get('credentials', {}).get('credentials', {}).get('sshkey', '')
 INTEGRATION_ID = demisto.params().get('integration_id')
 INSTALLATION_ID = demisto.params().get('installation_id')
-BASE_URL = 'https://api.github.com'
+BASE_URL = demisto.params().get('private_url') if demisto.params().get('private_url') else 'https://api.github.com'
 REPOSITORY = demisto.params().get('repository')
 USE_SSL = not demisto.params().get('insecure', False)
 FETCH_TIME = demisto.params().get('fetch_time', '3')
@@ -970,8 +970,14 @@ def update_github_repo_contents_command():
     sha = args.get('sha')
 
     res = update_github_repo_contents(path, msg, content, sha)
-    msg = str(res)
-    demisto.results(msg)
+    #msg = str(res)
+    #demisto.results(msg)
+    command_result = CommandResults(
+        outputs_prefix='GitHub.Updated',
+        outputs_key_field='commit.sha',
+        outputs=res
+    )
+    return_results(command_result)
  
 
 def get_repo_contents(path: str, ref: str) -> dict:
@@ -997,11 +1003,11 @@ def get_github_repo_contents_command():
       msg = base64.b64decode(res['content'])
     entry = {
       "raw": res,
-      "data": str(msg)
+      "data": str(msg.decode('utf-8'))
     }
     command_result = CommandResults(
-        outputs_prefix='GitHub',
-        outputs_key_field='Content',
+        outputs_prefix='GitHub.Content',
+        outputs_key_field='sha',
         outputs=entry
     )
     return_results(command_result)

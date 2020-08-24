@@ -49,6 +49,10 @@ configuration:
   name: installation_id
   required: false
   type: 0
+- display: GitHub private url
+  name: private_url
+  required: false
+  type: 0
 description: Integration to GitHub API
 display: GitHub
 name: GitHub
@@ -79,10 +83,22 @@ script:
       description: The path to the file in the GitHub repository
       required: true
       secret: false
+    - default: false
+      isArray: false
+      name: branch
+      description: The branch to commit onto. default is master
+      required: false
+      secret: false
     name: Github-update-repo-contents
     description: Update a file or create one.
     deprecated: false
   - arguments:
+    - default: false
+      isArray: false
+      name: ref
+      description: The name of the commit, branch, tag
+      required: false
+      secret: false
     - default: false
       isArray: false
       name: path
@@ -2650,7 +2666,7 @@ script:
     - contextPath: GitHub.ActionsUsage.WorkflowUsage
       description: GitHub action worflow usage on different OS.
       type: Unknown
-  dockerimage: demisto/pyjwt3:1.0.0.8871
+  dockerimage: demisto/pyjwt3:1.0.0.10828
   feed: false
   isfetch: true
   longRunning: false
