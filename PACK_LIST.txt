@@ -1,2 +1,9 @@
+Base
+CommonDashboards
+CommonPlaybooks
+CommonReports
+CommonScripts
+CommonTypes
+CommonWidgets
 DBotScoreEnhancements
 MISP
