@@ -4,6 +4,5 @@ CommonPlaybooks
 CommonReports
 CommonScripts
 CommonTypes
-CommonWidgets
-DBotScoreEnhancements
-MISP
+SamplePack
+AutoFocus
