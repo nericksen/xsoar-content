@@ -295,10 +295,6 @@ script:
     arguments: []
     description: 'Groups returns all user groups, if request was sent from secondary
       project - only project''s groups are returned '
-  - name: prismacloudcompute-get-projects
-    arguments: []
-    description: 'Projects returns the project list that are viewable by the given
-      user '
   - name: prismacloudcompute-get-collections
     arguments: []
     description: 'Collections returns a list of references to the used collections '
@@ -482,6 +478,81 @@ script:
       required: true
       description: 'The JSON string of the users settings object. Reference: https://cdn.twistlock.com/docs/api/20.12/twistlock_api.html#users_put '
     description: 'UpdateUser updates an existing user '
+  - name: prismacloudcompute-get-projects
+    arguments: []
+    description: 'Projects returns the project list that are viewable by the given
+      user '
+  - name: prismacloudcompute-get-settings-projects
+    arguments: 
+    - name: project
+      description: 'The project to get settings for'
+      defaultValue: 'Central Console'
+    description: 'ProjectSettings returns the project settings '
+  - name: prismacloudcompute-post-settings-projects
+    arguments:
+    - name: enabled
+      required: true
+      auto: PREDEFINED
+      predefined:
+      - "True"
+      - "False"
+      description: True or False to enable the configured Console as  the Master project
+    description: 'SetProjectSettings sets the project federation settings '
+  - name: prismacloudcompute-put-projects-by-id
+    arguments:
+    - name: id
+      description: The project ID
+    - name: address
+      description: The supervisor address (https://<SUPERVISOR_CONSOLE>:8083)
+    - name: ca
+      description: CSV list CA certs
+    - name: skipCertificateVerification
+      auto: PREDEFINED
+      predefined:
+      - "True"
+      - "False"
+      description: Whether to verify cert
+    - name: password_type
+      auto: PREDEFINED
+      predefined:
+      - plain
+      - encrypted
+      description: The password type
+    - name: password
+      description: The password of the user
+    - name: user
+      description: The supervisor user
+    description: 'UpdateProject updates the specified project '
+  - name: prismacloudcompute-delete-projects-by-id
+    arguments:
+    - name: id
+      required: true
+    description: 'DeleteProject deletes the specified project '
+  - name: prismacloudcompute-post-projects
+    arguments:
+    - name: id
+      description: The project ID
+    - name: address
+      description: The supervisor address (https://<SUPERVISOR_CONSOLE>:8083)
+    - name: ca
+      description: CSV list CA certs
+    - name: skipCertificateVerification
+      auto: PREDEFINED
+      predefined:
+      - "True"
+      - "False"
+      description: Whether to verify cert
+    - name: password_type
+      auto: PREDEFINED
+      predefined:
+      - plain
+      - encrypted
+      description: The password type
+    - name: password
+      description: The password of the user
+    - name: user
+      description: The supervisor user
+    description: 'Create a Project'
 tests:
 - No test
 fromversion: 5.0.0

@@ -531,6 +531,60 @@ class Client(BaseClient):
         return response
 
 
+    def get_api_v1_projects_request(self):
+
+        headers = self._headers
+
+        response = self._http_request('get', 'projects', headers=headers)
+
+        return response
+
+
+    def get_api_v1_settings_projects_request(self, project):
+        params = assign_params(project=project)
+        headers = self._headers
+
+        response = self._http_request('get', 'settings/projects', headers=headers, params=params)
+
+        return response
+
+    def post_api_v1_settings_projects_request(self, enabled):
+        data = {
+            "master": enabled
+        }
+        headers = self._headers
+
+        response = self._http_request('post', 'settings/projects', headers=headers, data=json.dumps(data), resp_type="text")
+
+        return response
+
+
+    def post_api_v1_projects_request(self, settings):
+
+        headers = self._headers
+
+        response = self._http_request('post', 'projects', headers=headers, data=json.dumps(settings))
+
+        return response
+
+
+    def put_api_v1_projects_by_id_request(self, id_, settings):
+
+        headers = self._headers
+
+        response = self._http_request('put', f'projects/{id_}', headers=headers, data=settings)
+
+        return response
+
+
+    def delete_api_v1_projects_by_id_request(self, id_):
+
+        headers = self._headers
+
+        response = self._http_request('delete', f'projects/{id_}', headers=headers)
+
+        return response
+
 def str_to_bool(s):
     """
     Translates string representing boolean value into boolean value
@@ -1599,6 +1653,150 @@ def put_api_v1_users_command(client, args):
     return command_results
 
 
+def get_api_v1_projects_command(client, args):
+
+    response = client.get_api_v1_projects_request()
+    command_results = CommandResults(
+        outputs_prefix='PrismaCloudCompute.Projects',
+        outputs_key_field='_id',
+        outputs=response,
+        raw_response=response
+    )
+
+    return command_results
+
+def get_api_v1_settings_projects_command(client, args):
+    project = args.get("project", "Central Console")
+
+    response = client.get_api_v1_settings_projects_request(project)
+    response["_id"] = project
+    command_results = CommandResults(
+        outputs_prefix='PrismaCloudCompute.Projects',
+        outputs_key_field='_id',
+        outputs=response,
+        raw_response=response
+    )
+
+    return command_results
+
+def post_api_v1_settings_projects_command(client, args):
+    enabled = argToBoolean(args.get("enabled"))
+
+    response = client.post_api_v1_settings_projects_request(enabled)
+    if enabled:
+        message = "Enabled Projects"
+    else:
+        message = "Disabled Projects"
+    
+    entry = {
+        "Status": "Success",
+        "Message": message
+    }
+    command_results = CommandResults(
+        readable_output=tableToMarkdown("Projects", entry),
+        raw_response=response
+    )
+
+    return command_results
+
+
+def post_api_v1_projects_command(client, args):
+    #settings = args.get("settings")
+    _id = args.get("id")
+    address = args.get("address")
+    ca = args.get("ca", None)
+    skipVerify = argToBoolean(args.get("skipCertificateVerification", False))
+    password_type = args.get("password_type", None)
+    password = args.get("password", None)
+    user = args.get("user", None)
+
+    if ca:
+        ca_list = ca.split(",")
+    else:
+        ca_list = []
+
+    settings = {
+        "_id": _id,
+        "address": address,
+        "ca": ca_list,
+        "skipCertificateVerification": skipVerify,
+        "username": user
+    }
+    if password and password_type == "plain":
+        settings["password"] = {
+            "plain": password
+        }
+    elif password and password_type == "encrypted":
+        settings["password"] = {
+            "encrypted": password
+        }
+
+    response = client.post_api_v1_projects_request(settings)
+    command_results = CommandResults(
+        outputs_prefix='PrismaCloudCompute.Projects',
+        outputs_key_field='_id',
+        outputs=response,
+        raw_response=response
+    )
+
+    return command_results
+
+
+def put_api_v1_projects_by_id_command(client, args):
+    #settings = args.get("settings")
+    _id = args.get("id")
+    address = args.get("address")
+    ca = args.get("ca", None)
+    skipVerify = argToBoolean(args.get("skipCertificateVerification", False))
+    password_type = args.get("password_type", None)
+    password = args.get("password", None)
+    user = args.get("user", None)
+
+    if ca:
+        ca_list = ca.split(",")
+    else:
+        ca_list = []
+
+    settings = {
+        "_id": _id,
+        "address": address,
+        "ca": ca_list,
+        "skipCertificateVerification": skipVerify,
+        "username": user
+    }
+    if password and password_type == "plain":
+        settings["password"] = {
+            "plain": password
+        }
+    elif password and password_type == "encrypted":
+        settings["password"] = {
+            "encrypted": password
+        }
+
+
+    response = client.put_api_v1_projects_by_id_request(_id, settings)
+    command_results = CommandResults(
+        outputs_prefix='PrismaCloudCompute.Projects',
+        outputs_key_field='_id',
+        outputs=format_context(json.loads(settings)),
+        raw_response=response
+    )
+
+    return command_results
+
+
+def delete_api_v1_projects_by_id_command(client, args):
+    id_ = str(args.get('id', ''))
+
+    response = client.delete_api_v1_projects_by_id_request(id_)
+    command_results = CommandResults(
+        readable_output=tableToMarkdown("Projects", response),
+        raw_response=response
+    )
+
+    return command_results
+
+
 def main():
     """
         PARSE AND VALIDATE INTEGRATION PARAMS
@@ -1687,7 +1885,13 @@ def main():
             "prismacloudcompute-post-collections": post_api_v1_collections_command,
             "prismacloudcompute-post-groups": post_api_v1_groups_command,
             "prismacloudcompute-put-collections-by-id": put_api_v1_collections_by_id_command,
-            "prismacloudcompute-put-users": put_api_v1_users_command
+            "prismacloudcompute-put-users": put_api_v1_users_command,
+            "prismacloudcompute-get-projects": get_api_v1_projects_command,
+            "prismacloudcompute-get-settings-projects": get_api_v1_settings_projects_command,
+            "prismacloudcompute-post-settings-projects": post_api_v1_settings_projects_command,
+            "prismacloudcompute-post-projects": post_api_v1_projects_command,
+            "prismacloudcompute-put-projects-by-id": put_api_v1_projects_by_id_command,
+            "prismacloudcompute-delete-projects-by-id": delete_api_v1_projects_by_id_command
         }
 
         if demisto.command() == 'test-module':
