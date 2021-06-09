@@ -1,0 +1,32 @@
+# Python CircleCI 2.0 configuration file
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/python:3.7
+
+    steps:
+      # Step 1: obtain repo from GitHub
+      - checkout
+      # Step 2: Install demisto-sdk
+      - run:
+          name: Install Demisto SDK 
+          command: |
+            pip install demisto-sdk
+      # Step 3: run linter and tests
+      - run:
+          name: Run Linter and Validate
+          command: |
+            demisto-sdk download -lf --insecure
+      # Step 4: Upload Content to Staging
+      - run:
+          name: Release to Staging
+          command: |
+            export DEMISTO_API_KEY=${DEMISTO_STAGING_API_KEY}
+            export DEMISTO_BASE_URL=${DEMISTO_STAGING_BASE_URL}
+            echo ${DEMISTO_API_KEY}
+            echo ${DEMISTO_BASE_URL}
+            #demisto-sdk upload --insecure -i Packs
+            for pack in $(ls Packs); do
+              echo $pack
+            done
