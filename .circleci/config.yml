@@ -28,5 +28,5 @@ jobs:
             echo ${DEMISTO_BASE_URL}
             #demisto-sdk upload --insecure -i Packs
             for pack in $(ls Packs); do
-              echo $pack
+              demisto-sdk upload -i $pack --insecure
             done

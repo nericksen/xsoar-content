@@ -1,0 +1,16 @@
+{
+    "name": "PWN Utilities",
+    "description": "This pack contains custom utilies for PWN",
+    "support": "community",
+    "currentVersion": "1.0.0",
+    "author": "NE",
+    "url": "https://live.paloaltonetworks.com/t5/cortex-xsoar-discussions/bd-p/Cortex_XSOAR_Discussions",
+    "email": "",
+    "categories": [
+        "Utilities"
+    ],
+    "tags": [],
+    "useCases": [],
+    "keywords": [],
+    "githubUser": []
+}
