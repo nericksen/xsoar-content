@@ -553,6 +553,12 @@ script:
     - name: user
       description: The supervisor user
     description: 'Create a Project'
+  - name: prismacloudcompute-defenders-serverless-bundle
+    arguments:
+    - name: runtime
+      description: 'Runtime is the type of the serverless function '
+    description: 'DownloadServerlessBundle returns a ZIP with serverless defender
+      bundle '
 tests:
 - No test
 fromversion: 5.0.0

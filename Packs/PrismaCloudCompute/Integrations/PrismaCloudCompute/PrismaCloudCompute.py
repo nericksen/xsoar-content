@@ -585,6 +585,16 @@ class Client(BaseClient):
 
         return response
 
+    def api_v1_defenders_serverless_bundle_request(self, runtime):
+        params = assign_params(runtime=runtime)
+
+        headers = self._headers
+
+        response = self._http_request('get', 'defenders/serverless/bundle', params=params, headers=headers, resp_type="response")
+
+        return response
+
+
 def str_to_bool(s):
     """
     Translates string representing boolean value into boolean value
@@ -1796,6 +1806,14 @@ def delete_api_v1_projects_by_id_command(client, args):
 
     return command_results
 
+def api_v1_defenders_serverless_bundle_command(client, args):
+    runtime = str(args.get('runtime', ''))
+
+    response = client.api_v1_defenders_serverless_bundle_request(runtime)
+    command_results = fileResult("serverless.zip", response.content)
+
+    return command_results
+
 
 def main():
     """
@@ -1891,7 +1909,8 @@ def main():
             "prismacloudcompute-post-settings-projects": post_api_v1_settings_projects_command,
             "prismacloudcompute-post-projects": post_api_v1_projects_command,
             "prismacloudcompute-put-projects-by-id": put_api_v1_projects_by_id_command,
-            "prismacloudcompute-delete-projects-by-id": delete_api_v1_projects_by_id_command
+            "prismacloudcompute-delete-projects-by-id": delete_api_v1_projects_by_id_command,
+            "prismacloudcompute-defenders-serverless-bundle": api_v1_defenders_serverless_bundle_command
         }
 
         if demisto.command() == 'test-module':
