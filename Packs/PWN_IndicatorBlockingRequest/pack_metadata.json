@@ -1,0 +1,25 @@
+{
+    "name": "PWN Indicator Blocking Request",
+    "description": "Use this pack to handle requests for blocking known bad indicators",
+    "support": "community",
+    "currentVersion": "1.0.0",
+    "author": "Nicholas Ericksen",
+    "url": "https://live.paloaltonetworks.com/t5/cortex-xsoar-discussions/bd-p/Cortex_XSOAR_Discussions",
+    "email": "",
+    "categories": [
+        "Data Enrichment & Threat Intelligence"
+    ],
+    "tags": [],
+    "useCases": [],
+    "keywords": [],
+    "githubUser": [],
+    "dependencies": {
+        "CommonTypes": {
+            "mandatory": true,
+            "display_name": "Common Types"
+        }
+    },
+    "displayedImages": [
+        "CommonTypes"
+    ]
+}
