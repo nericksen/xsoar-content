@@ -28,5 +28,9 @@ jobs:
             echo ${DEMISTO_BASE_URL}
             #demisto-sdk upload --insecure -i Packs
             for pack in $(ls Packs); do
-              demisto-sdk upload -i Packs/$pack --insecure
+              if demisto-sdk upload -i Packs/$pack --insecure; then
+                echo "$pack was successfully uploaded in full"
+              else
+                echo "$pack may not have uploaded completely. check details above"
+              fi
             done
