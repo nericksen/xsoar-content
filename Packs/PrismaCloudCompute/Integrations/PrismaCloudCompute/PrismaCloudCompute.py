@@ -595,6 +595,43 @@ class Client(BaseClient):
         return response
 
 
+    def api_v1_current_projects_request(self):
+
+        headers = self._headers
+
+        response = self._http_request('get', 'current/projects', headers=headers)
+
+        return response
+
+    def api_v1_defenders_features_request(self, id_, clusterMonitoring, proxyListenerType):
+
+        headers = self._headers
+
+        features = {
+            "id_": id_,
+            "clusterMonitoring": clusterMonitoring,
+            "proxyListenerType": proxyListenerType
+        }
+        response = self._http_request('post', f'defenders/{id_}/features', headers=headers, data=json.dumps(features))
+
+        return response
+
+    def api_v1_defenders_fargatejson_request(self, data, consoleaddr, defenderType, interpreter):
+        params = assign_params(consoleaddr=consoleaddr, defenderType=defenderType, interpreter=interpreter)
+
+        headers = self._headers
+        response = self._http_request('post', 'defenders/fargate.json', headers=headers,params=params, data=str(data), resp_type="response")
+
+        return response
+
+    def api_v1_settings_alerts_options_request(self, project):
+
+        headers = self._headers
+        params = assign_params(project=project)
+        response = self._http_request('get', 'settings/alerts/options', headers=headers, params=params)
+
+        return response
+
 def str_to_bool(s):
     """
     Translates string representing boolean value into boolean value
@@ -1209,8 +1246,8 @@ def get_api_v1_projects_command(client, args):
     response = client.get_api_v1_projects_request()
     command_results = CommandResults(
         outputs_prefix='PrismaCloudCompute.Projects',
-        outputs_key_field='',
-        outputs=response,
+        outputs_key_field='_Id',
+        outputs=format_context(response),
         raw_response=response
     )
 
@@ -1663,18 +1700,6 @@ def put_api_v1_users_command(client, args):
     return command_results
 
 
-def get_api_v1_projects_command(client, args):
-
-    response = client.get_api_v1_projects_request()
-    command_results = CommandResults(
-        outputs_prefix='PrismaCloudCompute.Projects',
-        outputs_key_field='_id',
-        outputs=response,
-        raw_response=response
-    )
-
-    return command_results
-
 def get_api_v1_settings_projects_command(client, args):
     project = args.get("project", "Central Console")
 
@@ -1744,8 +1769,8 @@ def post_api_v1_projects_command(client, args):
     response = client.post_api_v1_projects_request(settings)
     command_results = CommandResults(
         outputs_prefix='PrismaCloudCompute.Projects',
-        outputs_key_field='_id',
-        outputs=response,
+        outputs_key_field='_Id',
+        outputs=format_context(response),
         raw_response=response
     )
 
@@ -1787,7 +1812,7 @@ def put_api_v1_projects_by_id_command(client, args):
     response = client.put_api_v1_projects_by_id_request(_id, settings)
     command_results = CommandResults(
         outputs_prefix='PrismaCloudCompute.Projects',
-        outputs_key_field='_id',
+        outputs_key_field='_Id',
         outputs=format_context(json.loads(settings)),
         raw_response=response
     )
@@ -1814,6 +1839,66 @@ def api_v1_defenders_serverless_bundle_command(client, args):
 
     return command_results
 
+def api_v1_current_projects_command(client, args):
+
+    response = client.api_v1_current_projects_request()
+    command_results = CommandResults(
+        outputs_prefix='PrismaCloudCompute.Projects',
+        outputs_key_field='_Id',
+        outputs=format_context(response),
+        raw_response=response
+    )
+
+    return command_results
+
+def api_v1_defenders_features_command(client, args):
+    id_ = str(args.get('id', ''))
+    clusterMonitoring = argToBoolean(args.get('clusterMonitoring', True))
+    proxyListenerType = args.get('proxyListenerType', 'default').split(',')
+
+    response = client.api_v1_defenders_features_request(id_, clusterMonitoring, proxyListenerType)
+    command_results = CommandResults(
+        outputs_prefix='PrismaCloudCompute.Defenders',
+        outputs_key_field='_id',
+        outputs=response,
+        raw_response=response
+    )
+
+    return command_results
+
+def api_v1_defenders_fargatejson_command(client, args):
+    consoleaddr = str(args.get('consoleaddr', ''))
+    defenderType = str(args.get('defenderType', ''))
+    interpreter = str(args.get('interpreter', ''))
+    entryID = str(args.get('entryID'))
+    res = demisto.getFilePath(entryID)
+    file_path = res[0]['Contents']['path']
+
+    with open(file_path, 'r') as f:
+        data = f.read()
+
+    response = client.api_v1_defenders_fargatejson_request(data, consoleaddr, defenderType, interpreter)
+    command_results = fileResult("protected.json", response.content)
+
+    return command_results
+
+def api_v1_settings_alerts_options_command(client, args):
+    project = args.get("project", None)
+    
+    response = client.api_v1_settings_alerts_options_request(project)
+    entry = {
+        "_Id": project,
+        "AlertSettings": response
+    }
+    command_results = CommandResults(
+        outputs_prefix='PrismaCloudCompute.Projects',
+        outputs_key_field='_Id',
+        outputs=format_context(entry),
+        readable_output=tableToMarkdown(f"Alert Settings {entry['_Id']}", entry["AlertSettings"]),
+        raw_response=response
+    )
+
+    return command_results
 
 def main():
     """
@@ -1904,13 +1989,16 @@ def main():
             "prismacloudcompute-post-groups": post_api_v1_groups_command,
             "prismacloudcompute-put-collections-by-id": put_api_v1_collections_by_id_command,
             "prismacloudcompute-put-users": put_api_v1_users_command,
-            "prismacloudcompute-get-projects": get_api_v1_projects_command,
             "prismacloudcompute-get-settings-projects": get_api_v1_settings_projects_command,
             "prismacloudcompute-post-settings-projects": post_api_v1_settings_projects_command,
             "prismacloudcompute-post-projects": post_api_v1_projects_command,
             "prismacloudcompute-put-projects-by-id": put_api_v1_projects_by_id_command,
             "prismacloudcompute-delete-projects-by-id": delete_api_v1_projects_by_id_command,
-            "prismacloudcompute-defenders-serverless-bundle": api_v1_defenders_serverless_bundle_command
+            "prismacloudcompute-defenders-serverless-bundle": api_v1_defenders_serverless_bundle_command,
+            "prismacloudcompute-current-projects": api_v1_current_projects_command,
+            "prismacloudcompute-defenders-features": api_v1_defenders_features_command,
+            "prismacloudcompute-defenders-fargatejson": api_v1_defenders_fargatejson_command,
+            "prismacloudcompute-settings-alerts-options": api_v1_settings_alerts_options_command
         }
 
         if demisto.command() == 'test-module':

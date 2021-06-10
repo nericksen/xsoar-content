@@ -556,9 +556,53 @@ script:
   - name: prismacloudcompute-defenders-serverless-bundle
     arguments:
     - name: runtime
-      description: 'Runtime is the type of the serverless function '
+      description: 'Runtime is the type of the serverless function'
     description: 'DownloadServerlessBundle returns a ZIP with serverless defender
       bundle '
+  - name: prismacloudcompute-current-projects
+    arguments: []
+    description: 'UserProjects gets current user projects'
+  - name: prismacloudcompute-defenders-features
+    arguments:
+    - name: id
+      required: true
+    - name: clusterMonitoring
+      required: true
+      auto: PREDEFINED
+      predefined:
+      - "True"
+      - "False"
+      description: Indicates whether any of the cluster monitoring features are enabled
+        (monitor service accounts, monitor Istio, collect Kubernetes pod labels).
+    - name: proxyListenerType
+      auto: PREDEFINED
+      predefined:
+      - none
+      - tcp
+      - default
+      description: 'string (defender.ProxyListenerType) Value: ["none","tcp","default"]
+        ProxyListenerType is the proxy listener type of defenders'
+    description: 'UpdateDefenderFeatures update the specified defender features'
+  - name: prismacloudcompute-defenders-fargatejson
+    arguments:
+    - name: consoleaddr
+      description: 'consoleaddr is the remote console address '
+    - name: defenderType
+      description: 'DefenderType is the type of the defender to create the install
+        bundle for '
+    - name: interpreter
+      description: 'Interpreter is a custom interpreter set by the user to run the
+        fargate defender entrypoint script '
+    - name: entryID
+      required: true
+      description: entryID of the file for unprojected fargate json
+    description: 'FargateTask receives fargate task definition, augments all required
+      data and returns new task definition'
+  - name: prismacloudcompute-settings-alerts-options
+    arguments:
+    - name: project
+      description: 'The project to get the settings for'
+    description: 'AlertProfileOptions returns the alert profile configuration options'
 tests:
 - No test
 fromversion: 5.0.0
