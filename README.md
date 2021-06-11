@@ -8,3 +8,5 @@ This would be the dev instance of the remote repositories feature.
 Note you may have to update the environment variables to point to the correct instance.
 
 You can delete the Packs folder before running the release command to generate a clean pull from develop branch.
+
+`rm -rf Packs`
