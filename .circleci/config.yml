@@ -4,7 +4,9 @@ jobs:
   build:
     docker:
       - image: circleci/python:3.7
-
+    filters:
+        branches:
+            only: release
     steps:
       # Step 1: obtain repo from GitHub
       - checkout
