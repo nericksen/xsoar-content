@@ -4,6 +4,7 @@ CommonPlaybooks
 CommonReports
 CommonScripts
 CommonTypes
+ApiModules
 CVESearch
 Whois
 ipinfo
