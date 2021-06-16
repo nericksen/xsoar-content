@@ -24,5 +24,6 @@ AutoFocus
 CortexXDR
 Palo_Alto_Networks_WildFire
 PaloAltoNetworks_Threat_Vault
+MicrosoftGraphUser
 PWN_Utilities
 PWN_IndicatorBlockingRequest
