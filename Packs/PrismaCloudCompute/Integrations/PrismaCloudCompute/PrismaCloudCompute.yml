@@ -299,29 +299,37 @@ script:
     arguments: []
     description: 'Collections returns a list of references to the used collections '
   - name: prismacloudcompute-get-backups
-    arguments: []
-    description: 'List returns the available backups '
+    arguments:
+    - name: project
+      description: 'The project to retrieve the backups from'
+    description: 'List returns the available backups'
   - name: prismacloudcompute-get-backups-by-id
     arguments:
     - name: id
       required: true
       description: The backup id
-    description: 'DownloadBackup downloads the given backup file '
+    - name: project
+      description: 'The project to download the backup from'
+    description: 'DownloadBackup downloads the given backup file'
   - name: prismacloudcompute-get-alert-profiles
-    arguments: []
-    description: 'AlertProfiles returns the all alert profiles '
+    arguments:
+    - name: project
+      description: 'The project to get the alert profiles for'
+    description: 'AlertProfiles returns the all alert profiles'
   - name: prismacloudcompute-version
     arguments: []
-    description: 'Version returns the Console version '
+    description: 'Version returns the Console version'
   - name: prismacloudcompute-get-settings-alerts
     arguments: []
-    description: 'AlertsSettings returns the alert settings '
+    description: 'AlertsSettings returns the alert settings'
   - name: prismacloudcompute-get-settings-defender
     arguments: []
-    description: 'DefenderSettings returns the defenders settings '
+    description: 'DefenderSettings returns the defenders settings'
   - name: prismacloudcompute-get-settings-logging
-    arguments: []
-    description: 'LoggingSettings returns the event logger settings '
+    arguments:
+    - name: project
+      description: 'The project to get the logging settings for'
+    description: 'LoggingSettings returns the event logger settings'
   - name: prismacloudcompute-logs-console
     arguments:
     - name: lines
@@ -366,12 +374,16 @@ script:
     - name: id
       required: true
       description: The id of the backup to delete
+    - name: project
+      description: the project name
     description: 'DeleteBackup deletes the given backup '
   - name: prismacloudcompute-backups-restore
     arguments:
     - name: id
       required: true
       description: The ID of the backup to restore
+    - name: project
+      description: the project name
     description: 'Restore invokes a mongo restore process '
   - name: prismacloudcompute-post-backups
     arguments:
@@ -390,6 +402,8 @@ script:
     - name: name
       required: true
       description: the name to update the backup to
+    - name: project
+      description: the project name
     description: 'RenameBackup renames the given backup '
   - name: prismacloudcompute-post-settings-alerts
     arguments:
@@ -603,6 +617,21 @@ script:
     - name: project
       description: 'The project to get the settings for'
     description: 'AlertProfileOptions returns the alert profile configuration options'
+  - name: prismacloudcompute-post-alert-profiles
+    arguments:
+    - name: project
+      description: The project to apply the alert profile settings to
+    - name: profile
+      description: the JSON string of the alert profile
+    description: 'UpdateAlertProfile update the alert profile'
+  - name: prismacloudcompute-get-credentials
+    arguments: []
+    description: 'Credentials returns all credentials '
+  - name: prismacloudcompute-get-settings-certs
+    arguments:
+    - name: project
+      description: 'The project to get cert settings for'
+    description: 'CertSettings returns the console certificate settings '
 tests:
 - No test
 fromversion: 5.0.0

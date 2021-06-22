@@ -330,27 +330,27 @@ class Client(BaseClient):
 
         return response
 
-    def get_api_v1_backups_request(self):
-
+    def get_api_v1_backups_request(self, project):
+        params = assign_params(project=project)
         headers = self._headers
 
-        response = self._http_request('get', 'backups', headers=headers)
+        response = self._http_request('get', 'backups', headers=headers, params=params)
 
         return response
 
-    def get_api_v1_backups_by_id_request(self, id_):
-
+    def get_api_v1_backups_by_id_request(self, id_, project):
+        params = assign_params(project=project)
         headers = self._headers
 
-        response = self._http_request('get', f'backups/{id_}', headers=headers, resp_type="response")
+        response = self._http_request('get', f'backups/{id_}', headers=headers, resp_type="response", params=params)
 
         return response
 
-    def get_api_v1_alert_profiles_request(self):
-
+    def get_api_v1_alert_profiles_request(self, project):
+        params = assign_params(project=project)
         headers = self._headers
 
-        response = self._http_request('get', 'alert-profiles', headers=headers)
+        response = self._http_request('get', 'alert-profiles', headers=headers, params=params)
 
         return response
 
@@ -378,11 +378,11 @@ class Client(BaseClient):
 
         return response
 
-    def get_api_v1_settings_logging_request(self):
-
+    def get_api_v1_settings_logging_request(self, project):
+        params = assign_params(project)
         headers = self._headers
 
-        response = self._http_request('get', 'settings/logging', headers=headers)
+        response = self._http_request('get', 'settings/logging', headers=headers, params=params)
 
         return response
 
@@ -436,24 +436,23 @@ class Client(BaseClient):
 
         return response
 
-    def delete_api_v1_backups_by_id_request(self, id_):
-
+    def delete_api_v1_backups_by_id_request(self, id_, project):
+        params = assign_params(project=project)
         headers = self._headers
 
-        response = self._http_request('delete', f'backups/{id_}', headers=headers, resp_type="response")
+        response = self._http_request('delete', f'backups/{id_}', headers=headers, resp_type="response", params=params)
 
         return response
 
-    def api_v1_backups_restore_request(self, id_):
-
+    def api_v1_backups_restore_request(self, id_, project):
+        params = assign_params(project=project)
         headers = self._headers
 
-        response = self._http_request('post', f'backups/{id_}/restore', headers=headers, resp_type="response")
+        response = self._http_request('post', f'backups/{id_}/restore', headers=headers, resp_type="response", params=params)
 
         return response
 
     def post_api_v1_backups_request(self, name, project):
-
         headers = self._headers
         params = {
             "project": project
@@ -462,11 +461,11 @@ class Client(BaseClient):
 
         return response
 
-    def patch_api_v1_backups_by_id_request(self, id_, name):
-
+    def patch_api_v1_backups_by_id_request(self, id_, name, project):
+        params = assign_params(project=project)
         headers = self._headers
 
-        response = self._http_request('patch', f'backups/{id_}', headers=headers, data=f"\"{name}\"", resp_type="response")
+        response = self._http_request('patch', f'backups/{id_}', headers=headers, data=f"\"{name}\"", resp_type="response", params=params)
 
         return response
 
@@ -629,6 +628,30 @@ class Client(BaseClient):
         headers = self._headers
         params = assign_params(project=project)
         response = self._http_request('get', 'settings/alerts/options', headers=headers, params=params)
+
+        return response
+
+    def post_api_v1_alert_profiles_request(self, project, profile):
+        params = assign_params(project=project)
+        headers = self._headers
+
+        response = self._http_request('post', 'alert-profiles', headers=headers, params=params, data=profile, resp_type="text")
+
+        return response
+
+    def get_api_v1_credentials_request(self):
+
+        headers = self._headers
+
+        response = self._http_request('get', 'credentials', headers=headers)
+
+        return response
+
+    def get_api_v1_settings_certs_request(self, project):
+        params = assign_params(project=project)
+        headers = self._headers
+
+        response = self._http_request('get', 'settings/certs', headers=headers, params=params)
 
         return response
 
@@ -1268,8 +1291,8 @@ def get_api_v1_collections_command(client, args):
 
 
 def get_api_v1_backups_command(client, args):
-
-    response = client.get_api_v1_backups_request()
+    project = args.get("project", None)
+    response = client.get_api_v1_backups_request(project)
     command_results = CommandResults(
         outputs_prefix='PrismaCloudCompute.Backups',
         outputs_key_field='Id',
@@ -1282,16 +1305,17 @@ def get_api_v1_backups_command(client, args):
 
 def get_api_v1_backups_by_id_command(client, args):
     id_ = str(args.get('id', ''))
+    project = args.get('project', None)
 
-    response = client.get_api_v1_backups_by_id_request(id_)
+    response = client.get_api_v1_backups_by_id_request(id_, project)
     command_results = fileResult("backup.zip", response.content)
 
     return command_results
 
 
 def get_api_v1_alert_profiles_command(client, args):
-
-    response = client.get_api_v1_alert_profiles_request()
+    project = args.get("project", None)
+    response = client.get_api_v1_alert_profiles_request(project)
     command_results = CommandResults(
         outputs_prefix='PrismaCloudCompute.AlertProfiles',
         outputs_key_field='_Id',
@@ -1340,8 +1364,8 @@ def get_api_v1_settings_defender_command(client, args):
 
 
 def get_api_v1_settings_logging_command(client, args):
-
-    response = client.get_api_v1_settings_logging_request()
+    project = args.get('project', None)
+    response = client.get_api_v1_settings_logging_request(project)
     command_results = CommandResults(
         outputs_prefix='PrismaCloudCompute.LoggingSettings',
         outputs=format_context(response),
@@ -1474,8 +1498,8 @@ def delete_api_v1_alert_profiles_by_id_command(client, args):
 
 def delete_api_v1_backups_by_id_command(client, args):
     id_ = str(args.get('id', ''))
-
-    response = client.delete_api_v1_backups_by_id_request(id_)
+    project = args.get('project', None)
+    response = client.delete_api_v1_backups_by_id_request(id_, project)
     if response.status_code == 200:
         msg = f"Backup {id_} deleted successfully"
     else:
@@ -1496,8 +1520,9 @@ def delete_api_v1_backups_by_id_command(client, args):
 
 def api_v1_backups_restore_command(client, args):
     id_ = str(args.get('id', ''))
+    project = args.get('project', None)
 
-    response = client.api_v1_backups_restore_request(id_)
+    response = client.api_v1_backups_restore_request(id_, project)
     if response.status_code == 200:
         msg = f"Backup {id_} restored"
     else:
@@ -1541,8 +1566,9 @@ def post_api_v1_backups_command(client, args):
 def patch_api_v1_backups_by_id_command(client, args):
     id_ = str(args.get('id', ''))
     name = str(args.get('name', ''))
+    project = args.get('project', None)
 
-    response = client.patch_api_v1_backups_by_id_request(id_, name)
+    response = client.patch_api_v1_backups_by_id_request(id_, name, project)
     entry = {
         "StatusCode": response.status_code,
         "Message": f"Successful rename of {id_} to {name}"
@@ -1900,6 +1926,46 @@ def api_v1_settings_alerts_options_command(client, args):
 
     return command_results
 
+def post_api_v1_alert_profiles_command(client, args):
+    project = args.get("project", None)
+    profile = args.get("profile")
+
+    response = client.post_api_v1_alert_profiles_request(project, profile)
+
+    if not project:
+        project = "Central Console"
+    entry = format_context(json.loads(profile))
+    command_results = CommandResults(
+        readable_output=tableToMarkdown(f"Alert Profile {project}", entry),
+        raw_response=format_context(entry)
+    )
+
+    return command_results
+
+def get_api_v1_credentials_command(client, args):
+    response = client.get_api_v1_credentials_request()
+    command_results = CommandResults(
+        outputs_prefix='PrismaCloudCompute.Credentials',
+        outputs_key_field='_Id',
+        outputs=format_context(response),
+        raw_response=response
+    )
+
+    return command_results
+
+
+def get_api_v1_settings_certs_command(client, args):
+    project = args.get('project', None)
+    response = client.get_api_v1_settings_certs_request(project)
+    command_results = CommandResults(
+        outputs_prefix='PrismaCloudCompute.Certs',
+        outputs_key_field='',
+        outputs=format_context(response),
+        raw_response=response
+    )
+
+    return command_results
+
 def main():
     """
         PARSE AND VALIDATE INTEGRATION PARAMS
@@ -1998,7 +2064,10 @@ def main():
             "prismacloudcompute-current-projects": api_v1_current_projects_command,
             "prismacloudcompute-defenders-features": api_v1_defenders_features_command,
             "prismacloudcompute-defenders-fargatejson": api_v1_defenders_fargatejson_command,
-            "prismacloudcompute-settings-alerts-options": api_v1_settings_alerts_options_command
+            "prismacloudcompute-settings-alerts-options": api_v1_settings_alerts_options_command,
+            "prismacloudcompute-post-alert-profiles": post_api_v1_alert_profiles_command,
+            "prismacloudcompute-get-credentials": get_api_v1_credentials_command,
+            "prismacloudcompute-get-settings-certs": get_api_v1_settings_certs_command
         }
 
         if demisto.command() == 'test-module':
