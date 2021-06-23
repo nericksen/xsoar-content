@@ -655,6 +655,49 @@ class Client(BaseClient):
 
         return response
 
+    def post_api_v1_credentials_request(self, data, project):
+        params = assign_params(project=project)
+        headers = self._headers
+
+        response = self._http_request('post', 'credentials', headers=headers, data=data, resp_type="text", params=params)
+
+        return response
+
+    def post_api_v1_settings_logging_request(self, settings, project):
+        params = assign_params(project=project)
+        headers = self._headers
+
+        response = self._http_request('post', 'settings/logging', headers=headers, data=settings, params=params, resp_type="text")
+
+        return response
+
+    def post_api_v1_settings_certs_request(self, data, project):
+        params = assign_params(project=project)
+
+        headers = self._headers
+
+        response = self._http_request('post', 'settings/certs', headers=headers, data=data, params=params, resp_type="text")
+
+        return response
+
+    def get_api_v1_settings_custom_labels_request(self, project):
+        params = assign_params(project=project)
+        headers = self._headers
+
+        response = self._http_request('get', 'settings/custom-labels', headers=headers, params=params)
+
+        return response
+
+    def post_api_v1_settings_custom_labels_request(self, labels, project):
+        params = assign_params(project=project)
+        headers = self._headers
+        data = {
+            "labels": labels
+        }
+        response = self._http_request('post', 'settings/custom-labels', headers=headers, params=params, data=json.dumps(data), resp_type="text")
+
+        return response
+
 def str_to_bool(s):
     """
     Translates string representing boolean value into boolean value
@@ -1966,6 +2009,113 @@ def get_api_v1_settings_certs_command(client, args):
 
     return command_results
 
+def post_api_v1_credentials_command(client, args):
+    data = args.get("data")
+    project = args.get("project", None)
+
+    response = client.post_api_v1_credentials_request(data, project)
+    entry = {
+        "Data": format_context(data)
+    }
+    if project:
+        entry["_Id"] = project
+    else:
+        entry["_Id"] = "Central Console"
+    command_results = CommandResults(
+        readable_outputs=tableToMarkdown("Credentials", entry),
+        raw_response=entry
+    )
+
+    return command_results
+
+def post_api_v1_settings_logging_command(client, args):
+    settings = args.get("settings")
+    project = args.get("project", None)
+
+    response = client.post_api_v1_settings_logging_request(settings, project)
+    entry = {
+        "LogSettings": format_context(json.loads(settings))
+    }
+
+    if project:
+        entry["_Id"] = project
+    else:
+        entry["_Id"] = "Central Console"
+
+    command_results = CommandResults(
+        outputs_prefix='PrismaCloudCompute.Projects',
+        outputs_key_field='_Id',
+        outputs=entry,
+        readable_output=tableToMarkdown("Log Settings", entry["LogSettings"]),
+        raw_response=entry
+    )
+
+    return command_results
+
+def post_api_v1_settings_certs_command(client, args):
+    data = args.get("data")
+    project = args.get("project", None)
+    response = client.post_api_v1_settings_certs_request(data, project)
+    entry = {
+        "Cert": format_context(data)
+    }
+
+    if project:
+        entry["_Id"] = project
+    else:
+        entry["_Id"] = "Central Console"
+
+    command_results = CommandResults(
+        readable_output=tableToMarkdown("Cert Settings", entry),
+        raw_response=entry
+    )
+
+    return command_results
+
+def get_api_v1_settings_custom_labels_command(client, args):
+    project = args.get("project", None)
+
+    response = client.get_api_v1_settings_custom_labels_request(project)
+    entry = {
+        "Labels": response
+    }
+
+    if project:
+        entry["_Id"] = project
+    else:
+        entry["_Id"] = "Central Console"
+
+    command_results = CommandResults(
+        outputs_prefix='PrismaCloudCompute.Projects',
+        outputs_key_field='_Id',
+        outputs=entry,
+        raw_response=entry
+    )
+
+    return command_results
+
+def post_api_v1_settings_custom_labels_command(client, args):
+    project = args.get("project", None)
+    labels = args.get("labels").split(",")
+
+    response = client.post_api_v1_settings_custom_labels_request(labels, project)
+    entry = {
+        "Labels": labels
+    }
+
+    if project:
+        entry["_Id"] = project
+    else:
+        entry["_Id"] = "Central Console"
+    command_results = CommandResults(
+        outputs_prefix='PrismaCloudCompute.Labels',
+        outputs_key_field='_Id',
+        outputs=entry,
+        raw_response=entry
+    )
+
+    return command_results
+
 def main():
     """
         PARSE AND VALIDATE INTEGRATION PARAMS
@@ -2067,7 +2217,12 @@ def main():
             "prismacloudcompute-settings-alerts-options": api_v1_settings_alerts_options_command,
             "prismacloudcompute-post-alert-profiles": post_api_v1_alert_profiles_command,
             "prismacloudcompute-get-credentials": get_api_v1_credentials_command,
-            "prismacloudcompute-get-settings-certs": get_api_v1_settings_certs_command
+            "prismacloudcompute-get-settings-certs": get_api_v1_settings_certs_command,
+            "prismacloudcompute-post-credentials": post_api_v1_credentials_command,
+            "prismacloudcompute-post-settings-logging": post_api_v1_settings_logging_command,
+            "prismacloudcompute-post-settings-certs": post_api_v1_settings_certs_command,
+            "prismacloudcompute-get-settings-custom-labels": get_api_v1_settings_custom_labels_command,
+            "prismacloudcompute-post-settings-custom-labels": post_api_v1_settings_custom_labels_command
         }
 
         if demisto.command() == 'test-module':

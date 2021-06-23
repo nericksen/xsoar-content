@@ -632,6 +632,46 @@ script:
     - name: project
       description: 'The project to get cert settings for'
     description: 'CertSettings returns the console certificate settings '
+  - name: prismacloudcompute-post-credentials
+    arguments:
+    - name: data
+      required: true
+      description: 'The JSON string of the credential data as specified here: https://prisma.pan.dev/api/cloud/cwpp/credentials#operation/post-credentials '
+    - name: project
+      description: The project to add the credential to
+    description: 'UpdateCredential adds or updates a credential '
+  - name: prismacloudcompute-post-settings-logging
+    arguments:
+    - name: settings
+      required: true
+      description: 'the json string of the configuration object. Example:   {  "syslog":
+        {    "enabled": true,    "verboseScan": true,    "allProcEvents": false,    "addr":
+        ""    },  "stdout": {    "enabled": true,    "verboseScan": true,    "allProcEvents":
+        false,    }    }'
+    - name: project
+      description: "The name of the project"
+    description: 'SetLoggingSettings sets the logging settings '
+  - name: prismacloudcompute-post-settings-certs
+    arguments:
+    - name: data
+      required: true
+      description: The credential data as a JSON string
+    - name: project
+      description: The project to create the cert for
+    description: 'UpdateCertSettings updates the certificate settings '
+  - name: prismacloudcompute-get-settings-custom-labels
+    arguments:
+    - name: project
+      description: "The project to get labels for"
+    description: 'SettingsCustomLabels returns the custom labels settings '
+  - name: prismacloudcompute-post-settings-custom-labels
+    arguments:
+    - name: labels
+      description: "CSV list of labels to create"
+      required: true
+    - name: project
+      description: 'The project to create labels in'
+    description: 'SetCustomLabels sets the custom audit labels '
 tests:
 - No test
 fromversion: 5.0.0
