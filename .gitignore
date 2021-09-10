@@ -46,6 +46,4 @@ Packs/**/__init__.py
 # coverage related
 /coverage_report
 .coverage
-
-# Custom Ignore
-.circleci
+.demisto-sdk-report
