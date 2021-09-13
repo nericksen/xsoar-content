@@ -1,0 +1,4 @@
+general:
+  branches:
+    only:
+     - release # list of branches to build
