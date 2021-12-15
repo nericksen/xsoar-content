@@ -2,11 +2,11 @@
     "custom_packs": [
         {
             "id": "PWN_IndicatorBlockingRequest",
-            "url": "artifacts/uploadable_packs/PWN_IndicatorBlockingRequest.zip"
+            "url": "https://github.com/nericksen/xsoar-content/raw/release/artifacts/uploadable_packs/PWN_IndicatorBlockingRequest.zip"
         },
         {
             "id": "PWN_Utilities",
-            "url": "artifacts/uploadable_packs/PWN_Utilities.zip"
+            "url": "https://github.com/nericksen/xsoar-content/raw/release/artifacts/uploadable_packs/PWN_Utilities.zip"
         }
     ],
     "marketplace_packs": [
