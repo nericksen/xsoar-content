@@ -4,7 +4,7 @@
 
 while read line
 do
-    echo "Copying ${line} pack from develop branch"
+    echo "Copying ${line} pack from master branch"
     git checkout master -- "Packs/${line}"
 done < PACK_LIST.txt
 

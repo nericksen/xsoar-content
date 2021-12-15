@@ -6,7 +6,7 @@ configuration:
 - display: API Key
   hidden: false
   name: api_key
-  required: false
+  required: true
   type: 4
 - display: Fetch indicators
   name: feed
@@ -93,8 +93,8 @@ configuration:
   name: create_relationships
   required: false
   type: 8
-description: Unit42 feed of published IOCs, which contains known malicious indicators.
-display: Unit42 v2 Feed
+description: Unit 42 feed of published IOCs, which contains known malicious indicators.
+display: Unit 42 ATOMs Feed
 name: Unit42v2 Feed
 script:
   commands:
@@ -110,7 +110,7 @@ script:
     description: Retrieves a limited number of the indicators.
     execution: false
     name: unit42-get-indicators
-  dockerimage: demisto/taxii2:1.0.0.19258
+  dockerimage: demisto/taxii2:1.0.0.23423
   feed: true
   isfetch: false
   longRunning: false

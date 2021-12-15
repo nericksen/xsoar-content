@@ -49,7 +49,7 @@
         {
           "Indicator": "1.1.1.1",
           "Type": "ip",
-          "Vendor": "IPinfo_v2",
+          "Vendor": "IPinfo",
           "Score": 0,
           "Reliability": "C - Fairly reliable"
         }
@@ -130,7 +130,7 @@
         {
           "Indicator": "1.1.1.1",
           "Type": "ip",
-          "Vendor": "IPinfo_v2",
+          "Vendor": "IPinfo",
           "Score": 0,
           "Reliability": "C - Fairly reliable"
         }

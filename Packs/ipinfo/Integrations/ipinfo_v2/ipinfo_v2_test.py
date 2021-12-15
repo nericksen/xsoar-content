@@ -4,6 +4,15 @@ import json
 import io
 
 from CommonServerPython import DBotScoreReliability
+import demistomock as demisto
+import pytest
+
+from ipinfo_v2 import BRAND_NAME
+
+
+@pytest.fixture(autouse=True)
+def handle_calling_context(mocker):
+    mocker.patch.object(demisto, 'callingContext', {'context': {'IntegrationBrand': BRAND_NAME}, 'integration': True})
 
 
 def util_load_json(path):
