@@ -1,4 +1,11 @@
-general:
-  branches:
-    only:
-     - release # list of branches to build
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/python:3.7
+    filters:
+        branches:
+            only: release
+    steps:
+      # Step 1: obtain repo from GitHub
+      - echo "Dummy run"
