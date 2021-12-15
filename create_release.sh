@@ -5,7 +5,7 @@
 while read line
 do
     echo "Copying ${line} pack from develop branch"
-    git checkout develop -- "Packs/${line}"
+    git checkout master -- "Packs/${line}"
 done < PACK_LIST.txt
 
 # Run through and generate dependecy tree
