@@ -1,0 +1,34 @@
+{
+    "custom_packs": [
+        {
+            "id": "PWN_IndicatorBlockingRequest",
+            "url": "artifacts/uploadable_packs/PWN_IndicatorBlockingRequest.zip"
+        },
+        {
+            "id": "PWN_Utilities",
+            "url": "artifacts/uploadable_packs/PWN_Utilities.zip"
+        }
+    ],
+    "marketplace_packs": [
+        {
+            "id": "FeedJSON",
+            "version": "*"
+        },
+        {
+            "id": "GoogleCloudStorage",
+            "version": "*"
+        },
+        {
+            "id": "GitHub",
+            "version": "*"
+        },
+        {
+            "id": "DemistoRESTAPI",
+            "version": "*"
+        },
+        {
+            "id": "GraphQL",
+            "version": "*"
+        }
+    ]
+}
