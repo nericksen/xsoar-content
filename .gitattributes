@@ -1,1 +1,1 @@
-.circleci merge=ours
+.circleci/ merge=ours
