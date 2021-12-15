@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 import demistomock as demisto
@@ -307,6 +309,112 @@ def test_create_url_filter_params_9_x(mocker):
     assert url_filter_params['element'].find('<action>block</action>') == -1  # if  -1, then it is not found
 
 
+def test_edit_url_filter_non_valid_args_8_x(mocker):
+    """
+    Given:
+     - a non valid argument for edit url filter
+
+    When:
+     - running the edit_url_filter function
+     - mocking the pan-os version to be 8.x
+
+    Then:
+     - a proper error is raised
+    """
+    from Panorama import panorama_edit_url_filter
+    url_filter_object = {
+        "@name": "fw_test_pb_dont_delete",
+        "action": "block",
+        "allow": {
+            "member": [
+                "Demisto- block sites",
+                "test3"
+            ]
+        },
+        "allow-list": {
+            "member": "www.thepill2.com"
+        },
+        "block": {
+            "member": [
+                "abortion",
+                "abused-drugs"
+            ]
+        },
+        "block-list": {
+            "member": "www.thepill.com"
+        },
+        "credential-enforcement": {
+            "allow": {
+                "member": [
+                    "Demisto- block sites",
+                    "test3"
+                ]
+            },
+            "block": {
+                "member": [
+                    "abortion",
+                    "abused-drugs"
+                ]
+            },
+            "log-severity": "medium",
+        },
+        "description": "gogo"
+    }
+    mocker.patch('Panorama.get_pan_os_major_version', return_value=8)
+    mocker.patch('Panorama.panorama_get_url_filter', return_value=url_filter_object)
+    url_filter_name = 'fw_test_pb_dont_delete'
+    element_to_change = 'allow_categories'
+    element_value = 'gambling'
+    add_remove_element = 'remove'
+
+    err_msg = 'Only the override_allow_list, override_block_list, description properties can be'\
+              ' changed in PAN-OS 8.x or earlier versions.'
+    with pytest.raises(DemistoException, match=err_msg):
+        panorama_edit_url_filter(url_filter_name, element_to_change, element_value, add_remove_element)
+
+
+def test_edit_url_filter_non_valid_args_9_x(mocker):
+    """
+    Given:
+     - a non valid argument for edit url filter
+
+    When:
+     - running the edit_url_filter function
+     - mocking the pan-os version to be 9.x
+
+    Then:
+     - a proper error is raised
+    """
+    from Panorama import panorama_edit_url_filter
+    url_filter_object = {
+        "@name": "fw_test_pb_dont_delete",
+        "allow": {
+            "member": "Test_pb_custom_url_DONT_DELETE"
+        },
+        "credential-enforcement": {
+            "block": {
+                "member": [
+                    "gambling",
+                    "abortion"
+                ]
+            },
+            "log-severity": "medium",
+        },
+        "description": "wowo"
+    }
+    mocker.patch('Panorama.get_pan_os_major_version', return_value=9)
+    mocker.patch('Panorama.panorama_get_url_filter', return_value=url_filter_object)
+    url_filter_name = 'fw_test_pb_dont_delete'
+    element_to_change = 'override_block_list'
+    element_value = 'gambling'
+    add_remove_element = 'remove'
+
+    err_msg = 'Only the allow_categories, block_categories, description properties can be changed in PAN-OS 9.x or' \
+              ' later versions.'
+    with pytest.raises(DemistoException, match=err_msg):
+        panorama_edit_url_filter(url_filter_name, element_to_change, element_value, add_remove_element)
+
+
 def test_prettify_edl():
     from Panorama import prettify_edl
     edl = {'@name': 'edl_name', 'type': {'my_type': {'url': 'abc.com', 'description': 'my_desc'}}}
@@ -316,7 +424,17 @@ def test_prettify_edl():
 
 
 def test_build_traffic_logs_query():
-    # (addr.src in 192.168.1.222) and (app eq netbios-dg) and (action eq allow) and (port.dst eq 138)
+    """
+    Given:
+     - a valid arguments for traffic logs query generation
+
+    When:
+     - running the build_traffic_logs_query utility function
+
+    Then:
+     - a proper query is generated
+        (addr.src in 192.168.1.222) and (app eq netbios-dg) and (action eq allow) and (port.dst eq 138)
+    """
     from Panorama import build_traffic_logs_query
     source = '192.168.1.222'
     application = 'netbios-dg'
@@ -334,6 +452,26 @@ def test_prettify_traffic_logs():
     response = prettify_traffic_logs(traffic_logs)
     expected = [{'Action': 'my_action1', 'Category': 'my_category1', 'Rule': 'my_rule1'},
                 {'Action': 'my_action2', 'Category': 'my_category2', 'Rule': 'my_rule2'}]
+    assert response == expected
+
+
+def test_build_logs_query():
+    """
+    Given:
+     - a valid arguments for logs query generation
+
+    When:
+     - running the build_logs_query utility function
+
+    Then:
+     - a proper query is generated
+        ((url contains 'demisto.com') or (url contains 'paloaltonetworks.com'))
+    """
+    from Panorama import build_logs_query
+
+    urls_as_string = "demisto.com, paloaltonetworks.com"
+    response = build_logs_query(None, None, None, None, None, None, None, None, None, urls_as_string, None)
+    expected = "((url contains 'demisto.com') or (url contains 'paloaltonetworks.com'))"
     assert response == expected
 
 
@@ -469,6 +607,25 @@ def test_validate_search_time():
         assert validate_search_time('219/10/35')
 
 
+def test_show_user_id_interface_config_command():
+    """
+    Given:
+     - missing template and template_stack arguments for the show_user_id_interface_config_command command
+
+    When:
+     - running the show_user_id_interface_config_request function
+
+    Then:
+     - a proper exception is raised
+    """
+    from Panorama import show_user_id_interface_config_command
+    args = {}
+    str_match = 'In order to show the User Interface configuration in your Panorama, ' \
+                'supply either the template or the template_stack arguments.'
+    with pytest.raises(DemistoException, match=str_match):
+        show_user_id_interface_config_command(args)
+
+
 def test_prettify_user_interface_config():
     from Panorama import prettify_user_interface_config
     raw_response = [{'@name': 'internal', 'network': {'layer3': {'member': 'ethernet1/2'},
@@ -480,6 +637,26 @@ def test_prettify_user_interface_config():
     expected = [{'Name': 'ethernet1/2', 'Zone': 'internal', 'EnableUserIdentification': 'yes'},
                 {'Name': 'ethernet1/1', 'Zone': 'External', 'EnableUserIdentification': 'no'}]
     assert response == expected
+
+
+def test_list_configured_user_id_agents_command(mocker):
+    """
+    Given:
+     - missing template and template_stack arguments for the list_configured_user_id_agents_command command
+
+    When:
+     - running the list_configured_user_id_agents_request function
+
+    Then:
+     - a proper exception is raised
+    """
+    from Panorama import list_configured_user_id_agents_command
+    mocker.patch('Panorama.get_pan_os_major_version', return_value=9)
+    args = {}
+    str_match = 'In order to show the the User ID Agents in your Panorama, ' \
+                'supply either the template or the template_stack arguments.'
+    with pytest.raises(DemistoException, match=str_match):
+        list_configured_user_id_agents_command(args)
 
 
 def test_prettify_configured_user_id_agents__multi_result():
@@ -508,3 +685,80 @@ def test_prettify_configured_user_id_agents__single_result():
                 'CollectorName': 'demisto', 'Secret': 'secret', 'EnableHipCollection': 'no', 'SerialNumber': None,
                 'IpUserMapping': 'yes', 'Disabled': 'no'}
     assert response == expected
+
+
+def test_prettify_rule():
+    from Panorama import prettify_rule
+    with open("test_data/rule.json") as f:
+        rule = json.load(f)
+
+    with open("test_data/prettify_rule.json") as f:
+        expected_prettify_rule = json.load(f)
+
+    prettify_rule = prettify_rule(rule)
+
+    assert prettify_rule == expected_prettify_rule
+
+
+class TestPanoramaEditRuleCommand:
+    EDIT_SUCCESS_RESPONSE = {'response': {'@status': 'success', '@code': '20', 'msg': 'command succeeded'}}
+
+    @staticmethod
+    def test_sanity(mocker):
+        import Panorama
+        args = {
+            'rulename': 'TestRule',
+            'element_to_change': 'source',
+            'element_value': '2.3.4.5,3.3.3.3',
+            'behaviour': 'add',
+        }
+        commited_rule_item = {
+            'response': {
+                '@status': 'success',
+                '@code': '19',
+                'result': {
+                    '@total-count': '1',
+                    '@count': '1',
+                    'source': {
+                         'member': ['1.1.1.1', '3.3.3.3', '2.3.4.5'],
+                    }
+                }
+            }
+        }
+        mocker.patch('Panorama.http_request', return_value=commited_rule_item)
+        Panorama.panorama_edit_rule_command(args)
+
+    @staticmethod
+    def test_add_to_element_on_uncommited_rule(mocker):
+        import Panorama
+        args = {
+            'rulename': 'TestRule',
+            'element_to_change': 'source',
+            'element_value': '2.3.4.5',
+            'behaviour': 'add',
+        }
+        uncommited_rule_item = {
+            'response': {
+                '@status': 'success',
+                '@code': '19',
+                'result': {
+                    '@total-count': '1',
+                    '@count': '1',
+                    'source': {
+                        '@admin': 'admin',
+                        '@dirtyId': '1616',
+                        '@time': '2021/11/27 10:55:18',
+                        'member': {
+                            '@admin': 'admin',
+                            '@dirtyId': '1616',
+                            '@time': '2021/11/27 10:55:18',
+                            '#text': '3.3.3.3',
+                        }
+                    }
+                }
+            }
+        }
+        mocker.patch('Panorama.http_request', return_value=uncommited_rule_item)
+
+        with pytest.raises(DemistoException):
+            Panorama.panorama_edit_rule_command(args)

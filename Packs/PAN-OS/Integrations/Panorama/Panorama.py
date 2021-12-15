@@ -2372,26 +2372,31 @@ def prettify_get_url_filter(url_filter: dict):
     if 'override' in url_filter:
         override_category_list = url_filter['override']['member']
 
+    alert_category_list = argToList(alert_category_list)
     for category in alert_category_list:
         pretty_url_filter['Category'].append({
             'Name': category,
             'Action': 'alert'
         })
+    block_category_list = argToList(block_category_list)
     for category in block_category_list:
         pretty_url_filter['Category'].append({
             'Name': category,
             'Action': 'block'
         })
+    allow_category_list = argToList(allow_category_list)
     for category in allow_category_list:
         pretty_url_filter['Category'].append({
             'Name': category,
             'Action': 'block'
         })
+    continue_category_list = argToList(continue_category_list)
     for category in continue_category_list:
         pretty_url_filter['Category'].append({
             'Name': category,
             'Action': 'block'
         })
+    override_category_list = argToList(override_category_list)
     for category in override_category_list:
         pretty_url_filter['Category'].append({
             'Name': category,
@@ -2412,7 +2417,7 @@ def panorama_get_url_filter(name: str):
     params = {
         'action': 'get',
         'type': 'config',
-        'xpath': XPATH_OBJECTS + "profiles/url-filtering/entry[@name='" + name + "']",
+        'xpath': f'{XPATH_OBJECTS}profiles/url-filtering/entry[@name=\"{name}\"]',
         'key': API_KEY
     }
     result = http_request(
@@ -2493,17 +2498,17 @@ def panorama_create_url_filter_command(args: dict):
     """
     Create a URL Filter
     """
-    url_filter_name = args['name']
-    action = args['action']
-    url_category_list = argToList(args['url_category'])
+    url_filter_name = str(args.get('name', ''))
+    action = str(args.get('action', ''))
+    url_category_list = argToList(args.get('url_category'))
     override_allow_list = argToList(args.get('override_allow_list'))
     override_block_list = argToList(args.get('override_block_list'))
-    description = args.get('description')
+    description = args.get('description', '')
 
     result = panorama_create_url_filter(url_filter_name, action, url_category_list, override_allow_list,
                                         override_block_list, description)
 
-    url_filter_output = {'Name': url_filter_name}
+    url_filter_output: Dict[str, Any] = {'Name': url_filter_name}
     if DEVICE_GROUP:
         url_filter_output['DeviceGroup'] = DEVICE_GROUP
     url_filter_output['Category'] = []
@@ -2532,12 +2537,31 @@ def panorama_create_url_filter_command(args: dict):
 
 
 @logger
+def verify_edit_url_filter_args(major_version: int, element_to_change: str) -> None:
+    if major_version >= 9:  # only url categories are allowed, e.g gambling, abortion
+        if element_to_change not in ('allow_categories', 'block_categories', 'description'):
+            raise DemistoException('Only the allow_categories, block_categories, description properties can be changed'
+                                   ' in PAN-OS 9.x or later versions.')
+    else:  # major_version 8.x or lower. only url lists are allowed, e.g www.test.com
+        if element_to_change not in ('override_allow_list', 'override_block_list', 'description'):
+            raise DemistoException('Only the override_allow_list, override_block_list, description properties can be'
+                                   ' changed in PAN-OS 8.x or earlier versions.')
+
+
+@logger
+def set_edit_url_filter_xpaths(major_version: int) -> Tuple[str, str]:
+    if major_version >= 9:
+        return 'allow', 'block'
+    return 'allow-list', 'block-list'
+
+
+@logger
 def panorama_edit_url_filter(url_filter_name: str, element_to_change: str, element_value: str,
                              add_remove_element: Optional[str] = None):
     url_filter_prev = panorama_get_url_filter(url_filter_name)
     if '@dirtyId' in url_filter_prev:
         LOG(f'Found uncommitted item:\n{url_filter_prev}')
-        raise Exception('Please commit the instance prior to editing the URL Filter.')
+        raise DemistoException('Please commit the instance prior to editing the URL Filter.')
 
     url_filter_output: Dict[str, Any] = {'Name': url_filter_name}
     if DEVICE_GROUP:
@@ -2548,36 +2572,46 @@ def panorama_edit_url_filter(url_filter_name: str, element_to_change: str, eleme
         'key': API_KEY,
     }
 
+    major_version = get_pan_os_major_version()
+    # it seems that in major 9.x pan-os changed the terminology from allow-list/block-list to allow/block
+    # with regards to url filter xpaths
+    verify_edit_url_filter_args(major_version, element_to_change)
+    allow_name, block_name = set_edit_url_filter_xpaths(major_version)
+
     if element_to_change == 'description':
-        params['xpath'] = XPATH_OBJECTS + f"profiles/url-filtering/entry[@name='{url_filter_name}']/{element_to_change}"
+        params['xpath'] = f"{XPATH_OBJECTS}profiles/url-filtering/entry[@name=\'{url_filter_name}\']/{element_to_change}"
         params['element'] = add_argument_open(element_value, 'description', False)
         result = http_request(URL, 'POST', body=params)
         url_filter_output['Description'] = element_value
 
-    elif element_to_change == 'override_allow_list':
-        prev_override_allow_list = argToList(url_filter_prev['allow-list']['member'])
+    elif element_to_change in ('override_allow_list', 'allow_categories'):
+        previous_allow = argToList(url_filter_prev.get(allow_name, {}).get('member', []))
         if add_remove_element == 'add':
-            new_override_allow_list = list((set(prev_override_allow_list)).union(set([element_value])))
+            new_allow = list((set(previous_allow)).union(set([element_value])))
         else:
-            new_override_allow_list = [url for url in prev_override_allow_list if url != element_value]
+            if element_value not in previous_allow:
+                raise DemistoException(f'The element {element_value} is not present in {url_filter_name}')
+            new_allow = [url for url in previous_allow if url != element_value]
 
-        params['xpath'] = XPATH_OBJECTS + "profiles/url-filtering/entry[@name='" + url_filter_name + "']/allow-list"
-        params['element'] = add_argument_list(new_override_allow_list, 'allow-list', True)
+        params['xpath'] = f"{XPATH_OBJECTS}profiles/url-filtering/entry[@name=\'{url_filter_name}\']/{allow_name}"
+        params['element'] = add_argument_list(new_allow, allow_name, True)
         result = http_request(URL, 'POST', body=params)
-        url_filter_output[element_to_change] = new_override_allow_list
+        url_filter_output[element_to_change] = new_allow
 
-    # element_to_change == 'override_block_list'
+    # element_to_change in ('override_block_list', 'block_categories')
     else:
-        prev_override_block_list = argToList(url_filter_prev['block-list']['member'])
+        previous_block = argToList(url_filter_prev.get(block_name, {}).get('member', []))
         if add_remove_element == 'add':
-            new_override_block_list = list((set(prev_override_block_list)).union(set([element_value])))
+            new_block = list((set(previous_block)).union(set([element_value])))
         else:
-            new_override_block_list = [url for url in prev_override_block_list if url != element_value]
+            if element_value not in previous_block:
+                raise DemistoException(f'The element {element_value} is not present in {url_filter_name}')
+            new_block = [url for url in previous_block if url != element_value]
 
-        params['xpath'] = XPATH_OBJECTS + "profiles/url-filtering/entry[@name='" + url_filter_name + "']/block-list"
-        params['element'] = add_argument_list(new_override_block_list, 'block-list', True)
+        params['xpath'] = f"{XPATH_OBJECTS}profiles/url-filtering/entry[@name=\'{url_filter_name}\']/{block_name}"
+        params['element'] = add_argument_list(new_block, block_name, True)
         result = http_request(URL, 'POST', body=params)
-        url_filter_output[element_to_change] = new_override_block_list
+        url_filter_output[element_to_change] = new_block
 
     return result, url_filter_output
 
@@ -2586,10 +2620,10 @@ def panorama_edit_url_filter_command(args: dict):
     """
     Edit a URL Filter
     """
-    url_filter_name = args['name']
-    element_to_change = args['element_to_change']
-    add_remove_element = args['add_remove_element']
-    element_value = args['element_value']
+    url_filter_name = str(args.get('name'))
+    element_to_change = str(args.get('element_to_change'))
+    add_remove_element = str(args.get('add_remove_element'))
+    element_value = str(args.get('element_value'))
 
     result, url_filter_output = panorama_edit_url_filter(url_filter_name, element_to_change, element_value,
                                                          add_remove_element)
@@ -2660,23 +2694,23 @@ def prettify_rule(rule: dict):
         pretty_rule['DeviceGroup'] = DEVICE_GROUP
     if '@loc' in rule:
         pretty_rule['Location'] = rule['@loc']
-    if 'category' in rule and 'member' in rule['category']:
+    if isinstance(rule.get('category'), dict) and 'member' in rule['category']:
         pretty_rule['CustomUrlCategory'] = rule['category']['member']
-    if 'application' in rule and 'member' in rule['application']:
+    if isinstance(rule.get('application'), dict) and 'member' in rule['application']:
         pretty_rule['Application'] = rule['application']['member']
-    if 'destination' in rule and 'member' in rule['destination']:
+    if isinstance(rule.get('destination'), dict) and 'member' in rule['destination']:
         pretty_rule['Destination'] = rule['destination']['member']
-    if 'from' in rule and 'member' in rule['from']:
+    if isinstance(rule.get('from'), dict) and 'member' in rule['from']:
         pretty_rule['From'] = rule['from']['member']
-    if 'service' in rule and 'member' in rule['service']:
+    if isinstance(rule.get('service'), dict) and 'member' in rule['service']:
         pretty_rule['Service'] = rule['service']['member']
-    if 'to' in rule and 'member' in rule['to']:
+    if isinstance(rule.get('to'), dict) and 'member' in rule['to']:
         pretty_rule['To'] = rule['to']['member']
-    if 'source' in rule and 'member' in rule['source']:
+    if isinstance(rule.get('source'), dict) and 'member' in rule['source']:
         pretty_rule['Source'] = rule['source']['member']
-    if 'tag' in rule and 'member' in rule['tag']:
+    if isinstance(rule.get('tag'), dict) and 'member' in rule['tag']:
         pretty_rule['Tags'] = rule['tag']['member']
-    if 'log-setting' in rule and '#text' in rule['log-setting']:
+    if isinstance(rule.get('log-setting'), dict) and '#text' in rule['log-setting']:
         pretty_rule['LogForwardingProfile'] = rule['log-setting']['#text']
 
     return pretty_rule
@@ -2870,10 +2904,11 @@ def panorama_get_current_element(element_to_change: str, xpath: str) -> list:
         return []
 
     result = response.get('response').get('result')
-    if '@dirtyId' in result:
+    current_object = result.get(element_to_change, {})
+    if '@dirtyId' in result or '@dirtyId' in current_object:
         LOG(f'Found uncommitted item:\n{result}')
-        raise Exception('Please commit the instance prior to editing the Security rule.')
-    current_object = result.get(element_to_change)
+        raise DemistoException('Please commit the instance prior to editing the Security rule.')
+
     if 'list' in current_object:
         current_objects_items = argToList(current_object['list']['member'])
     elif 'member' in current_object:
@@ -4286,8 +4321,6 @@ def panorama_query_logs_command(args: dict):
     rule = args.get('rule')
     filedigest = args.get('filedigest')
     url = args.get('url')
-    if url and url[-1] != '/':
-        url += '/'
 
     if query and (address_src or address_dst or zone_src or zone_dst
                   or time_generated or action or port_dst or rule or url or filedigest):
@@ -4299,8 +4332,7 @@ def panorama_query_logs_command(args: dict):
 
     if result['response']['@status'] == 'error':
         if 'msg' in result['response'] and 'line' in result['response']['msg']:
-            message = '. Reason is: ' + result['response']['msg']['line']
-            raise Exception('Query logs failed' + message)
+            raise Exception(f"Query logs failed. Reason is: {result['response']['msg']['line']}")
         else:
             raise Exception('Query logs failed.')
 
@@ -5564,9 +5596,9 @@ def prettify_data_filtering_rule(rule: Dict) -> Dict:
     pretty_rule = {
         'Name': rule.get('@name')
     }
-    if 'application' in rule and 'member' in rule['application']:
+    if isinstance(rule.get('application'), dict) and 'member' in rule['application']:
         pretty_rule['Application'] = rule['application']['member']
-    if 'file-type' in rule and 'member' in rule['file-type']:
+    if isinstance(rule.get('file-type'), dict) and 'member' in rule['file-type']:
         pretty_rule['File-type'] = rule['file-type']['member']
     if 'direction' in rule:
         pretty_rule['Direction'] = rule['direction']
@@ -5912,19 +5944,19 @@ def prettify_profile_rule(rule: Dict) -> Dict:
         'Name': rule['@name'],
         'Action': rule['action']
     }
-    if 'application' in rule and 'member' in rule['application']:
+    if isinstance(rule.get('application'), dict) and 'member' in rule['application']:
         pretty_rule['Application'] = rule['application']['member']
-    if 'file-type' in rule and 'member' in rule['file-type']:
+    if isinstance(rule.get('file-type'), dict) and 'member' in rule['file-type']:
         pretty_rule['File-type'] = rule['file-type']['member']
     if 'wildfire-action' in rule:
         pretty_rule['WildFire-action'] = rule['wildfire-action']
-    if 'category' in rule and 'member' in rule['category']:
+    if isinstance(rule.get('category'), dict) and 'member' in rule['category']:
         pretty_rule['Category'] = rule['category']['member']
     elif 'category' in rule:
         pretty_rule['Category'] = rule['category']
-    if 'severity' in rule and 'member' in rule['severity']:
+    if isinstance(rule.get('severity'), dict) and 'member' in rule['severity']:
         pretty_rule['Severity'] = rule['severity']['member']
-    if 'threat-name' in rule and 'member' in rule['threat-name']:
+    if isinstance(rule.get('threat-name'), dict) and 'member' in rule['threat-name']:
         pretty_rule['Threat-name'] = rule['threat-name']['member']
     elif 'threat-name' in rule:
         pretty_rule['Threat-name'] = rule['threat-name']
@@ -5932,7 +5964,7 @@ def prettify_profile_rule(rule: Dict) -> Dict:
         pretty_rule['Packet-capture'] = rule['packet-capture']
     if '@maxver' in rule:
         pretty_rule['Max_version'] = rule['@maxver']
-    if 'sinkhole' in rule:
+    if isinstance(rule.get('sinkhole'), dict):
         pretty_rule['Sinkhole'] = {}
         if 'ipv4-address' in rule['sinkhole']:
             pretty_rule['Sinkhole']['IPV4'] = rule['sinkhole']['ipv4-address']
@@ -5940,9 +5972,9 @@ def prettify_profile_rule(rule: Dict) -> Dict:
             pretty_rule['Sinkhole']['IPV6'] = rule['sinkhole']['ipv6-address']
     if 'host' in rule:
         pretty_rule['Host'] = rule['host']
-    if 'cve' in rule and 'member' in rule['cve']:
+    if isinstance(rule.get('cve'), dict) and 'member' in rule['cve']:
         pretty_rule['CVE'] = rule['cve']['member']
-    if 'vendor-id' in rule and 'member' in rule['vendor-id']:
+    if isinstance(rule.get('vendor-id'), dict) and 'member' in rule['vendor-id']:
         pretty_rule['Vendor-id'] = rule['vendor-id']['member']
     if 'analysis' in rule:
         pretty_rule['Analysis'] = rule['analysis']
@@ -6155,9 +6187,9 @@ def prettify_wildfire_rule(rule: Dict) -> Dict:
     pretty_rule = {
         'Name': rule['@name'],
     }
-    if 'application' in rule and 'member' in rule['application']:
+    if isinstance(rule.get('application'), dict) and 'member' in rule['application']:
         pretty_rule['Application'] = rule['application']['member']
-    if 'file-type' in rule and 'member' in rule['file-type']:
+    if isinstance(rule.get('file-type'), dict) and 'member' in rule['file-type']:
         pretty_rule['File-type'] = rule['file-type']['member']
     if 'analysis' in rule:
         pretty_rule['Analysis'] = rule['analysis']
@@ -6742,29 +6774,30 @@ def prettify_user_interface_config(zone_config: Union[List, Dict]) -> Union[List
     return pretty_interface_config
 
 
-def show_user_id_interface_config_request(args):
-    template = args.get('template') if args.get('template') else TEMPLATE
-    template_stack = args.get('template_stack')
-    vsys = args.get('vsys')
+def show_user_id_interface_config_request(args: dict):
+    # template argument is managed in hte initialize_instance method
+    template_stack = str(args.get('template_stack', ''))
 
+    vsys = args.get('vsys')
     if VSYS and not vsys:
         vsys = VSYS
     elif not vsys:
         vsys = 'vsys1'
 
-    # firewall instance xpath
-    if VSYS:
-        xpath = "/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name=\'" + vsys + "\']/zone"
+    if not VSYS and not TEMPLATE and not template_stack:
+        raise DemistoException('In order to show the User Interface configuration in your Panorama, '
+                               'supply either the template or the template_stack arguments.')
 
-    # panorama instance xpath
-    elif not template_stack:
-        xpath = "/config/devices/entry[@name='localhost.localdomain']/" \
-                "template/entry[@name=\'" + template + "\']/config/devices/entry[@name='localhost.localdomain']/" \
-                                                       "vsys/entry[@name=\'" + vsys + "\']/zone"
-    else:
-        xpath = "/config/devices/entry[@name='localhost.localdomain']" \
-                "/template-stack/entry[@name=\'" + template_stack + \
-                "\']/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name=\'" + vsys + "\']/zone"
+    if VSYS:  # firewall instance xpath
+        xpath = f"/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name=\'{vsys}\']/zone"
+    elif not template_stack:  # panorama instance xpath with template
+        template_test(str(TEMPLATE))  # verify that the template exists
+        xpath = f"/config/devices/entry[@name='localhost.localdomain']/template/entry[@name=\'{TEMPLATE}\']/config" \
+                f"/devices/entry[@name='localhost.localdomain']/vsys/entry[@name=\'{vsys}\']/zone"
+    else:  # panorama instance xpath with template_stack
+        xpath = "/config/devices/entry[@name='localhost.localdomain']/template-stack/" \
+                f"entry[@name=\'{template_stack}\']/config/devices/entry[@name='localhost.localdomain']/vsys/" \
+                f"entry[@name=\'{vsys}\']/zone"
 
     params = {
         'action': 'show',
@@ -6824,23 +6857,27 @@ def show_zone_config_command(args):
         return_results("No results found")
 
 
-def list_configured_user_id_agents_request(args, version):
-    template = args.get('template') if args.get('template') else TEMPLATE
-    template_stack = args.get('template_stack')
-    vsys = args.get('vsys')
+def list_configured_user_id_agents_request(args: dict, version):
+    # template argument is managed in hte initialize_instance method
+    template_stack = str(args.get('template_stack', ''))
 
+    vsys = args.get('vsys')
     if VSYS and not vsys:
         vsys = VSYS
     elif not vsys:
         vsys = 'vsys1'
 
+    if not VSYS and not TEMPLATE and not template_stack:
+
+        raise DemistoException('In order to show the the User ID Agents in your Panorama, '
+                               'supply either the template or the template_stack arguments.')
+
     if VSYS:
         if version < 10:
-            xpath = "/config/devices/entry[@name='localhost.localdomain']/" \
-                    "vsys/entry[@name=\'" + vsys + "\']/user-id-agent"
+            xpath = f"/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name=\'{vsys}\']/user-id-agent"
         else:
-            xpath = "/config/devices/entry[@name='localhost.localdomain']" \
-                    "/vsys/entry[@name=\'" + vsys + "\']/redistribution-agent"
+            xpath = f"/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name=\'{vsys}\']/" \
+                    "redistribution-agent"
 
     elif template_stack:
         if version < 10:
@@ -6852,14 +6889,14 @@ def list_configured_user_id_agents_request(args, version):
                     "/entry[@name=\'" + template_stack + "\']/config/devices/entry[@name='localhost.localdomain']" \
                                                          "/vsys/entry[@name=\'" + vsys + "\']/redistribution-agent"
     else:
+        template_test(str(TEMPLATE))  # verify that the template exists
         if version < 10:
-            xpath = "/config/devices/entry[@name='localhost.localdomain']/template/entry[@name=\'" + template + \
-                    "\']/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name=\'" + vsys + \
-                    "\']/user-id-agent"
+            xpath = f"/config/devices/entry[@name='localhost.localdomain']/template/entry[@name=\'{TEMPLATE}\']" \
+                    f"/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name=\'{vsys}\']/user-id-agent"
         else:
-            xpath = "/config/devices/entry[@name='localhost.localdomain']/template/entry[@name=\'" + template + \
-                    "\']/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name=\'" + vsys + \
-                    "\']/redistribution-agent"
+            xpath = f"/config/devices/entry[@name='localhost.localdomain']/template/entry[@name=\'{TEMPLATE}\']/" \
+                    f"config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name=\'{vsys}\']/" \
+                    "redistribution-agent"
 
     params = {
         'action': 'show',
@@ -6915,7 +6952,7 @@ def prettify_configured_user_id_agents(user_id_agents: Union[List, Dict]) -> Uni
     return pretty_user_id_agents
 
 
-def list_configured_user_id_agents_command(args):
+def list_configured_user_id_agents_command(args: dict):
     version = get_pan_os_major_version()
     raw_response = list_configured_user_id_agents_request(args, version)
     if raw_response:
@@ -6947,7 +6984,6 @@ def initialize_instance(args: Dict[str, str], params: Dict[str, str]):
     API_KEY = str(params.get('key'))
     USE_SSL = not params.get('insecure')
     USE_URL_FILTERING = params.get('use_url_filtering')
-    TEMPLATE = params.get('template')
 
     # determine a vsys or a device-group
     VSYS = params.get('vsys', '')
@@ -6956,6 +6992,11 @@ def initialize_instance(args: Dict[str, str], params: Dict[str, str]):
         DEVICE_GROUP = args.get('device-group')  # type: ignore[assignment]
     else:
         DEVICE_GROUP = params.get('device_group', None)  # type: ignore[arg-type]
+
+    if args and args.get('template'):
+        TEMPLATE = args.get('template')  # type: ignore[assignment]
+    else:
+        TEMPLATE = params.get('template', None)  # type: ignore[arg-type]
 
     PRE_POST = args.get('pre_post', '')
 
@@ -7086,13 +7127,14 @@ def main():
     try:
         args = demisto.args()
         params = demisto.params()
-        additional_malicious = argToList(demisto.params().get('additional_malicious'))
-        additional_suspicious = argToList(demisto.params().get('additional_suspicious'))
+        additional_malicious = argToList(params.get('additional_malicious'))
+        additional_suspicious = argToList(params.get('additional_suspicious'))
         initialize_instance(args=args, params=params)
         LOG(f'Command being called is: {demisto.command()}')
 
         # Remove proxy if not set to true in params
         handle_proxy()
+
 
         if demisto.command() == 'test-module':
             panorama_test()
@@ -7450,9 +7492,8 @@ def main():
 
         else:
             raise NotImplementedError(f'Command {demisto.command()} was not implemented.')
-
     except Exception as err:
-        return_error(str(err))
+        return_error(str(err), error=traceback.format_exc())
 
     finally:
         LOG.print_log()
