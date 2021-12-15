@@ -1,0 +1,371 @@
+id: 644a8ef1-6a37-4b94-86be-68a975b47136
+inputs: []
+name: PWN Indicator Blocking Request
+outputs: []
+starttaskid: "0"
+tasks:
+  "0":
+    id: "0"
+    ignoreworker: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: bae24c6c-15bb-40b7-8ba1-c9c1a0d7baec
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: bae24c6c-15bb-40b7-8ba1-c9c1a0d7baec
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 50
+        }
+      }
+  "1":
+    conditions:
+    - condition:
+      - - left:
+            iscontext: true
+            value:
+              simple: DBotScore.Score
+          operator: greaterThan
+          right:
+            value:
+              simple: "1"
+      label: "yes"
+    id: "1"
+    ignoreworker: false
+    nexttasks:
+      '#default#':
+      - "4"
+      "yes":
+      - "2"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 1145db54-5d2e-4797-85d4-8037ef15c5a2
+      iscommand: false
+      name: Are there bad indicators?
+      type: condition
+      version: -1
+    taskid: 1145db54-5d2e-4797-85d4-8037ef15c5a2
+    timertriggers: []
+    type: condition
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 195
+        }
+      }
+  "2":
+    id: "2"
+    ignoreworker: false
+    nexttasks:
+      '#none#':
+      - "4"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      accounttype: {}
+      action: {}
+      actor: {}
+      admincountry: {}
+      adminemail: {}
+      adminname: {}
+      adminphone: {}
+      aliases: {}
+      applications: {}
+      asn: {}
+      asowner: {}
+      assignedrole: {}
+      assigneduser: {}
+      associatedfilenames: {}
+      associations: {}
+      behavior: {}
+      biosversion: {}
+      campaign: {}
+      category: {}
+      city: {}
+      communitynotes: {}
+      confidence: {}
+      costcenter: {}
+      costcentercode: {}
+      countryname: {}
+      creationdate: {}
+      customFields: {}
+      cvedescription: {}
+      cvemodified: {}
+      cvss: {}
+      department: {}
+      description: {}
+      detectionengines: {}
+      devicemodel: {}
+      dhcpserver: {}
+      displayname: {}
+      dns: {}
+      domainidnname: {}
+      domainname: {}
+      domainreferringips: {}
+      domainreferringsubnets: {}
+      domainstatus: {}
+      downloadurl: {}
+      email: {}
+      emailaddress: {}
+      entryid: {}
+      expiration: {}
+      expirationdate: {}
+      feedrelatedindicators: {}
+      fileextension: {}
+      filetype: {}
+      firstseenbysource: {}
+      geocountry: {}
+      geolocation: {}
+      givenname: {}
+      goals: {}
+      groups: {}
+      hostname: {}
+      imphash: {}
+      indicatoridentification: {}
+      indicatorsIDs: {}
+      indicatorsValues:
+        complex:
+          accessor: Indicator
+          filters:
+          - - left:
+                iscontext: true
+                value:
+                  simple: DBotScore.Score
+              operator: greaterThan
+              right:
+                value:
+                  simple: "1"
+          root: DBotScore
+          transformers:
+          - args:
+              separator:
+                value:
+                  simple: ','
+            operator: join
+      infrastructuretypes: {}
+      internal: {}
+      ipaddress: {}
+      jobcode: {}
+      jobfamily: {}
+      jobfunction: {}
+      killchainphases: {}
+      lastseenbysource: {}
+      leadership: {}
+      location: {}
+      locationregion: {}
+      macaddress: {}
+      malwarefamily: {}
+      malwaretypes: {}
+      manageremailaddress: {}
+      managername: {}
+      md5: {}
+      memory: {}
+      mitreid: {}
+      mitretactics: {}
+      mobilephone: {}
+      name: {}
+      namefield: {}
+      nameservers: {}
+      objective: {}
+      office365category: {}
+      office365expressroute: {}
+      office365required: {}
+      operatingsystem: {}
+      operatingsystemrefs: {}
+      operatingsystemversion: {}
+      organization: {}
+      organizationalunitou: {}
+      organizationtype: {}
+      osversion: {}
+      path: {}
+      personalemail: {}
+      port: {}
+      positivedetections: {}
+      primarymotivation: {}
+      processor: {}
+      processors: {}
+      publications: {}
+      published: {}
+      quarantined: {}
+      region: {}
+      registrantcountry: {}
+      registrantemail: {}
+      registrantname: {}
+      registrantphone: {}
+      registrarabuseaddress: {}
+      registrarabusecountry: {}
+      registrarabuseemail: {}
+      registrarabusename: {}
+      registrarabusenetwork: {}
+      registrarabusephone: {}
+      registrarname: {}
+      reportedby: {}
+      reports: {}
+      reputation: {}
+      resourcelevel: {}
+      secondarymotivations: {}
+      service: {}
+      sha1: {}
+      sha256: {}
+      sha512: {}
+      signatureauthentihash: {}
+      signaturecopyright: {}
+      signaturedescription: {}
+      signaturefileversion: {}
+      signatureinternalname: {}
+      signed: {}
+      size: {}
+      sourceoriginalseverity: {}
+      ssdeep: {}
+      state: {}
+      stixaliases: {}
+      stixdescription: {}
+      stixgoals: {}
+      stixid: {}
+      stixismalwarefamily: {}
+      stixkillchainphases: {}
+      stixmalwaretypes: {}
+      stixprimarymotivation: {}
+      stixresourcelevel: {}
+      stixroles: {}
+      stixsecondarymotivations: {}
+      stixsophistication: {}
+      stixthreatactortypes: {}
+      stixtooltypes: {}
+      stixtoolversion: {}
+      streetaddress: {}
+      subdomains: {}
+      surname: {}
+      tags:
+        simple: block
+      targets: {}
+      threattypes: {}
+      title: {}
+      trafficlightprotocol: {}
+      type: {}
+      updateddate: {}
+      username: {}
+      vulnerabilities: {}
+      workphone: {}
+      xdrstatus: {}
+      zipcode: {}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.set.indicators
+      id: e1e9d347-adf4-4fca-85b5-f9caca51a34a
+      iscommand: true
+      name: Tag Suspicious and Malicious Indicators with "block" Tag
+      script: Builtin|||setIndicators
+      type: regular
+      version: -1
+    taskid: e1e9d347-adf4-4fca-85b5-f9caca51a34a
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 162.5,
+          "y": 370
+        }
+      }
+  "3":
+    id: "3"
+    ignoreworker: false
+    note: false
+    quietmode: 0
+    scriptarguments:
+      assetid: {}
+      closeNotes: {}
+      closeReason: {}
+      emailclassification: {}
+      id: {}
+      phishingsubtype: {}
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: Builtin
+      description: commands.local.cmd.close.inv
+      id: 5379d7c1-6ba8-4037-8175-7c03a4451ab0
+      iscommand: true
+      name: Close Investigation
+      script: Builtin|||closeInvestigation
+      type: regular
+      version: -1
+    taskid: 5379d7c1-6ba8-4037-8175-7c03a4451ab0
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 720
+        }
+      }
+  "4":
+    id: "4"
+    ignoreworker: false
+    nexttasks:
+      '#none#':
+      - "3"
+    note: false
+    quietmode: 0
+    scriptarguments:
+      excludeKeys: {}
+      json:
+        simple: ${DBotScore}
+      title: {}
+      titleKey:
+        simple: Indicator
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      description: 'Generate a flat markdown report from a complex json object. '
+      id: 3751dbc3-bf59-4d18-80e5-9f419ca01487
+      iscommand: false
+      name: Generate Indicator Report
+      script: 97fd67ec-bbb6-4f74-89a3-10cdd619e666
+      type: regular
+      version: -1
+    taskid: 3751dbc3-bf59-4d18-80e5-9f419ca01487
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 50,
+          "y": 545
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 765,
+        "width": 492.5,
+        "x": 50,
+        "y": 50
+      }
+    }
+  }

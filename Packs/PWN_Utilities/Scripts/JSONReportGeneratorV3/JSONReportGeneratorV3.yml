@@ -1,0 +1,26 @@
+args:
+- description: The JSON object to convert to a table. Defaults to all of the context
+  name: json
+- description: The Report Title Key.  should be the key path seperated by periods
+    ie titleKey=address.addr
+  name: titleKey
+- description: a static custom report title
+  name: title
+- description: the csv list of keys to exclude from report generator
+  name: excludeKeys
+comment: 'Generate a flat markdown report from a complex json object. '
+commonfields:
+  id: 97fd67ec-bbb6-4f74-89a3-10cdd619e666
+  version: -1
+dockerimage: demisto/python3:3.8.5.10845
+enabled: true
+name: JSONReportGeneratorV3
+pswd: ""
+runas: DBotWeakRole
+runonce: false
+script: ''
+scripttarget: 0
+subtype: python3
+tags:
+- dynamic-section
+type: python

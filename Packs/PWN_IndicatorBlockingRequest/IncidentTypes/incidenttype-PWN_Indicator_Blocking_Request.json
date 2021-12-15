@@ -1,0 +1,39 @@
+{
+	"autorun": true,
+	"closureScript": "",
+	"color": "#0277BD",
+	"days": 0,
+	"daysR": 0,
+	"default": false,
+	"detached": false,
+	"disabled": false,
+	"extractSettings": {
+		"fieldCliNameToExtractSettings": {
+			"details": {
+				"extractAsIsIndicatorTypeId": "",
+				"extractIndicatorTypesIDs": [],
+				"isExtractingAllIndicatorTypes": true
+			}
+		},
+		"mode": "Specific"
+	},
+	"fromServerVersion": "",
+	"hours": 0,
+	"hoursR": 0,
+	"id": "PWN Indicator Blocking Request",
+	"itemVersion": "",
+	"layout": "7ab20858-4502-4ddc-89c7-1847125de9bb",
+	"locked": false,
+	"name": "PWN Indicator Blocking Request",
+	"onChangeRepAlg": 0,
+	"packID": "",
+	"playbookId": "644a8ef1-6a37-4b94-86be-68a975b47136",
+	"preProcessingScript": "",
+	"readonly": false,
+	"reputationCalc": 0,
+	"system": false,
+	"toServerVersion": "",
+	"version": -1,
+	"weeks": 0,
+	"weeksR": 0
+}
