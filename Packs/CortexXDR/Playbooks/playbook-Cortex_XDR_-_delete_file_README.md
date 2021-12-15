@@ -1,5 +1,4 @@
-Initiates a new endpoint script execution to check if the file exists and retrieve the results.
-
+Initiates a new endpoint script execution to delete the specified file and retrieve the results.
 
 ## Dependencies
 This playbook uses the following sub-playbooks, integrations, and scripts.
@@ -14,8 +13,8 @@ This playbook uses the following sub-playbooks, integrations, and scripts.
 This playbook does not use any scripts.
 
 ### Commands
-* xdr-run-script-file-exists
 * xdr-get-script-execution-results
+* xdr-run-script-delete-file
 
 ## Playbook Inputs
 ---
@@ -23,7 +22,7 @@ This playbook does not use any scripts.
 | **Name** | **Description** | **Default Value** | **Required** |
 | --- | --- | --- | --- |
 | endpoint_id | A comma-separated list of endpoint IDs.  |  | Optional |
-| file_path | A comma-separated list of file paths to check.<br/>Files will be checked on all provided endpoint ids. |  | Optional |
+| file_path | A comma-separated list of file paths to delete.<br/>Files will be deleted on all provided endpoint ids |  | Optional |
 | script_timeout | The timeout in seconds for this execution.<br/>\(Default is: '600'\) |  | Optional |
 | polling_timeout | Amount of time to poll action status before declaring a timeout and resuming the playbook \(in minutes\). | 10 | Optional |
 
@@ -32,8 +31,8 @@ This playbook does not use any scripts.
 
 | **Path** | **Description** | **Type** |
 | --- | --- | --- |
-| PaloAltoNetworksXDR.ScriptResult.results._return_value | Value returned by the script in case the type is not a dictionary. | boolean |
+| PaloAltoNetworksXDR.ScriptResult.results._return_value | Value returned by the script in case the type is not a dictionary. | unknown |
 
 ## Playbook Image
 ---
-![Cortex XDR - check file existence](https://raw.githubusercontent.com/demisto/content/2e19477c6355d781bf8f5c9dfdd1216a6bca07b7/Packs/CortexXDR/doc_files/Cortex_XDR_-_Check_file_existence.png)
+![Cortex XDR - delete file](https://raw.githubusercontent.com/demisto/content/2e19477c6355d781bf8f5c9dfdd1216a6bca07b7/Packs/CortexXDR/doc_files/Cortex_XDR_-_Delete_file.png)
