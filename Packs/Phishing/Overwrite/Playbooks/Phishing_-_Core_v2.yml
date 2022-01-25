@@ -1,0 +1,94 @@
+id: Phishing - Core v2
+version: 4
+contentitemexportablefields:
+  contentitemfields:
+    packID: Phishing
+    itemVersion: 3.1.0
+    fromServerVersion: 6.0.0
+    toServerVersion: ""
+vcShouldKeepItemLegacyProdMachine: false
+name: Phishing - Core v2
+description: "This playbook provides a basic response to phishing incidents, including:\n-
+  Calculating reputation for all indicators\n- Extracting indicators from email attachments\n-
+  Calculating severity for the incident based on indicator reputation\n- Updating
+  the reporting user about investigation status\n- Enabling manual incident remediation
+  \n\nThis updated playbook uses:\n  1) Incident fields instead of labels\n  2) The
+  \"Process Email - Core v2\" playbook"
+starttaskid: "0"
+tasks:
+  "0":
+    id: "0"
+    taskid: 86854b0b-87ed-4b88-8f38-bb3adf91d7a8
+    type: start
+    task:
+      id: 86854b0b-87ed-4b88-8f38-bb3adf91d7a8
+      version: -1
+      name: ""
+      iscommand: false
+      brand: ""
+    nexttasks:
+      '#none#':
+      - "1"
+    separatecontext: false
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 50
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+  "1":
+    id: "1"
+    taskid: 3de47b9a-5e8d-4e96-8ae5-fff9efc3a465
+    type: regular
+    task:
+      id: 3de47b9a-5e8d-4e96-8ae5-fff9efc3a465
+      version: -1
+      name: Review Incident
+      type: regular
+      iscommand: false
+      brand: ""
+    separatecontext: false
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 270
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+system: true
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 315,
+        "width": 380,
+        "x": 450,
+        "y": 50
+      }
+    }
+  }
+inputs:
+- key: GetURLScreenshots
+  value:
+    simple: "True"
+  required: false
+  description: Whether the user wants the Rasterize integration to produce images
+    of URLs involved in the incident. If "True", screenshots are taken.
+  playbookInputQuery: null
+outputs: []
