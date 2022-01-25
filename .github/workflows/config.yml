@@ -34,8 +34,8 @@ jobs:
           echo "NEW_PACKS_FOLDER=/home/runner/work/repository/repository/content/new_packs_zips" >> $GITHUB_ENV
           echo "DEMISTO_README_VALIDATION=false" >> $GITHUB_ENV
           BRANCH_NAME=${REF#refs/heads/}
-          PACKS_CHANGED=$(python $GITHUB_WORKSPACE/repository/build_related_scripts/get_modified_packs.py --repo_path $GITHUB_WORKSPACE/repository/)
-          echo "PACKS_CHANGED=${PACKS_CHANGED}" >> $GITHUB_ENV
+          # PACKS_CHANGED=$(python $GITHUB_WORKSPACE/repository/build_related_scripts/get_modified_packs.py --repo_path $GITHUB_WORKSPACE/repository/)
+          # echo "PACKS_CHANGED=${PACKS_CHANGED}" >> $GITHUB_ENV
           # Copy Base pack from content to your repository. Needed for linting.
           cp -r $GITHUB_WORKSPACE/content/Packs/Base $GITHUB_WORKSPACE/repository/Packs
       - name: Prepare Venv
