@@ -27,3 +27,4 @@ PaloAltoNetworks_Threat_Vault
 MicrosoftGraphUser
 PWN_Utilities
 PWN_IndicatorBlockingRequest
+Phishing
