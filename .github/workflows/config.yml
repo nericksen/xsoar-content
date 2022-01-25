@@ -69,21 +69,21 @@ jobs:
           # Run validate on all changed files
           # You can choose what validations to use in the .demisto-sdk-conf file
           demisto-sdk validate --quite-bc-validation --no-conf-json --allow-skipped
-      - name: Run Unit Testing and Lint
-        if: always()
-        run: |
-          source $GITHUB_WORKSPACE/content/venv/bin/activate
-          cd $GITHUB_WORKSPACE/repository
-          # Copy necessary files
-          cp $GITHUB_WORKSPACE/content/Tests/demistomock/demistomock.py ./
-          cp $GITHUB_WORKSPACE/content/Tests/demistomock/demistomock.ps1 ./
-          cp $GITHUB_WORKSPACE/content/Packs/Base/Scripts/CommonServerPython/CommonServerPython.py ./
-          cp $GITHUB_WORKSPACE/content/Packs/Base/Scripts/CommonServerPowerShell/CommonServerPowerShell.ps1 ./
-          mkdir -p ./dev_envs/pytest/
-          cp $GITHUB_WORKSPACE/content/Tests/scripts/dev_envs/pytest/conftest.py ./dev_envs/pytest/
-          # Run lint on all changed files
-          # You can choose what lint checks to use in the .demisto-sdk-conf file
-          demisto-sdk lint -g
+      #- name: Run Unit Testing and Lint
+      #  if: always()
+      #  run: |
+      #    source $GITHUB_WORKSPACE/content/venv/bin/activate
+      #    cd $GITHUB_WORKSPACE/repository
+      #    # Copy necessary files
+      #    cp $GITHUB_WORKSPACE/content/Tests/demistomock/demistomock.py ./
+      #    cp $GITHUB_WORKSPACE/content/Tests/demistomock/demistomock.ps1 ./
+      #    cp $GITHUB_WORKSPACE/content/Packs/Base/Scripts/CommonServerPython/CommonServerPython.py ./
+      #    cp $GITHUB_WORKSPACE/content/Packs/Base/Scripts/CommonServerPowerShell/CommonServerPowerShell.ps1 ./
+      #    mkdir -p ./dev_envs/pytest/
+      #    cp $GITHUB_WORKSPACE/content/Tests/scripts/dev_envs/pytest/conftest.py ./dev_envs/pytest/
+      #    # Run lint on all changed files
+      #    # You can choose what lint checks to use in the .demisto-sdk-conf file
+      #    demisto-sdk lint -g
       - name: Create Packs Artifacts
         run: |
           if [ $PACKS_CHANGED ]; then
@@ -96,12 +96,6 @@ jobs:
           else
             echo "No packs has changed, skipping step."
           fi
-      #- name: Set AWS credentials
-      #  uses: aws-actions/configure-aws-credentials@v1
-      #  with:
-      #    aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      #    aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      #    aws-region: eu-west-1
       - name: Upload Packs to Artifacts Server
         env:
           REF: ${{ github.ref }}
