@@ -36,10 +36,6 @@ jobs:
           BRANCH_NAME=${REF#refs/heads/}
           PACKS_CHANGED=$(python $GITHUB_WORKSPACE/repository/build_related_scripts/get_modified_packs.py --repo_path $GITHUB_WORKSPACE/repository/)
           echo "PACKS_CHANGED=${PACKS_CHANGED}" >> $GITHUB_ENV
-          #echo "DEMISTO_SDK_GITHUB_TOKEN=<your-github-token>" >> $GITHUB_ENV
-          #echo "AWS_ACCESS_KEY_ID=${{secrets.AWS_ACCESS_KEY_ID}}" >> $GITHUB_ENV
-          #echo "AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}}" >> $GITHUB_ENV
-          #echo "AWS_SESSION_TOKEN=${{secrets.AWS_SESSION_TOKEN}}" >> $GITHUB_ENV
           # Copy Base pack from content to your repository. Needed for linting.
           cp -r $GITHUB_WORKSPACE/content/Packs/Base $GITHUB_WORKSPACE/repository/Packs
       - name: Prepare Venv
@@ -61,14 +57,14 @@ jobs:
           echo "========== Build Parameters =========="
           python3 --version
           demisto-sdk --version
-      - name: Validate Files and Yaml
-        if: always()
-        run: |
-          source $GITHUB_WORKSPACE/content/venv/bin/activate
-          cd $GITHUB_WORKSPACE/repository
-          # Run validate on all changed files
-          # You can choose what validations to use in the .demisto-sdk-conf file
-          demisto-sdk validate --quite-bc-validation --no-conf-json --allow-skipped
+      #- name: Validate Files and Yaml
+      #  if: always()
+      #  run: |
+      #    source $GITHUB_WORKSPACE/content/venv/bin/activate
+      #    cd $GITHUB_WORKSPACE/repository
+      #    # Run validate on all changed files
+      #    # You can choose what validations to use in the .demisto-sdk-conf file
+      #    demisto-sdk validate --quite-bc-validation --no-conf-json --allow-skipped
       #- name: Run Unit Testing and Lint
       #  if: always()
       #  run: |
