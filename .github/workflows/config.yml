@@ -8,7 +8,7 @@ jobs:
       - name: XSOAR CI/CD master checkout
         uses: actions/checkout@v2
         with:
-          repository: nericksen/content-ci-cd-template
+          repository: nericksen/xsoar-content
           path: repository
           fetch-depth: 0
       - name: Content checkout
