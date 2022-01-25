@@ -82,16 +82,12 @@ jobs:
       #    demisto-sdk lint -g
       - name: Create Packs Artifacts
         run: |
-          if [ $PACKS_CHANGED ]; then
-            source $GITHUB_WORKSPACE/content/venv/bin/activate
-            cd $GITHUB_WORKSPACE/repository/
-            for pack in Packs/*
-            do
-              demisto-sdk zip-packs --input $pack --output $ARTIFACTS_FOLDER
-            done
-          else
-            echo "No packs has changed, skipping step."
-          fi
+          source $GITHUB_WORKSPACE/content/venv/bin/activate
+          cd $GITHUB_WORKSPACE/repository/
+          for pack in Packs/*
+          do
+            demisto-sdk zip-packs --input $pack --output $ARTIFACTS_FOLDER
+          done
       - name: Upload Packs to Artifacts Server
         env:
           REF: ${{ github.ref }}
@@ -101,16 +97,12 @@ jobs:
           AWS_REGION: 'eu-west-1'
           AWS_DEFAULT_REGION: 'eu-west-1'
         run : |
-          if [ $PACKS_CHANGED ]; then
-            BRANCH_NAME=${REF#refs/heads/}
-            # Select the way you want to install the packs on the machine, and remove the second part
-            # For example: Choose the option 1 - UPLOAD TO ARTIFACTS SERVER OPTION, and remove the option 2 - UPLOAD DIRECTLY TO YOUR XSOAR MACHINE.
-            # For more information - https://xsoar.pan.dev/docs/reference/articles/xsoar-ci-cd#to-deploy-content
-            # 1. ========= UPLOAD TO ARTIFACTS SERVER OPTION =========
-            # Upload to the artifacts server of your choice.
-            # Create a file with the service account data
-            # use the bucket_upload script to upload your packs to google cloud storage
-            python $GITHUB_WORKSPACE/repository/build_related_scripts/bucket_upload_aws.py --bucket_name xsoar-content --packs_directory $ARTIFACTS_FOLDER/uploadable_packs --branch_name $BRANCH_NAME -v --default_branch master
-          else
-            echo "No packs has changed, skipping step."
-          fi 
+          BRANCH_NAME=${REF#refs/heads/}
+          # Select the way you want to install the packs on the machine, and remove the second part
+          # For example: Choose the option 1 - UPLOAD TO ARTIFACTS SERVER OPTION, and remove the option 2 - UPLOAD DIRECTLY TO YOUR XSOAR MACHINE.
+          # For more information - https://xsoar.pan.dev/docs/reference/articles/xsoar-ci-cd#to-deploy-content
+          # 1. ========= UPLOAD TO ARTIFACTS SERVER OPTION =========
+          # Upload to the artifacts server of your choice.
+          # Create a file with the service account data
+          # use the bucket_upload script to upload your packs to google cloud storage
+          python $GITHUB_WORKSPACE/repository/build_related_scripts/bucket_upload_aws.py --bucket_name xsoar-content --packs_directory $ARTIFACTS_FOLDER/uploadable_packs --branch_name $BRANCH_NAME -v --default_branch master
