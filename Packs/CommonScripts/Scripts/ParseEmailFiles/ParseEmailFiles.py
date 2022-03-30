@@ -23,7 +23,7 @@ from email.parser import HeaderParser
 from email.utils import getaddresses
 from struct import unpack
 
-import chardet
+import chardet  # type: ignore
 from olefile import OleFileIO, isOleFile
 
 import demistomock as demisto  # noqa: F401
@@ -315,6 +315,21 @@ def get_time(data_value):
     ) + timedelta(
         microseconds=unpack('q', data_value)[0] / 10.0
     )
+
+
+def parse_nesting_level(nesting_level_to_return, output):
+    # if nesting_level_to_return == 'All files' leave as is
+    email = output[0]
+    if nesting_level_to_return == 'Outer file':
+        # return only the outer email info
+        output = output[0]
+
+    elif nesting_level_to_return == 'Inner file':
+        # the last file in list it is the inner attached file
+        email = output[-1]
+        output = output[-1]
+
+    return email, output
 
 
 def get_multi_value_offsets(data_value):
@@ -3800,6 +3815,7 @@ def main():
     file_type = ''
     entry_id = demisto.args()['entryid']
     max_depth = int(demisto.args().get('max_depth', '3'))
+    nesting_level_to_return = demisto.args().get('nesting_level_to_return', 'All files')
 
     # we use the MAX_DEPTH_CONST to calculate the depth of the email
     # each level will reduce the max_depth by 1
@@ -3894,7 +3910,8 @@ def main():
         output = recursive_convert_to_unicode(output)
         email = output  # output may be a single email
         if isinstance(output, list) and len(output) > 0:
-            email = output[0]
+            email, output = parse_nesting_level(nesting_level_to_return, output)
+
         return_outputs(
             readable_output=data_to_md(email, file_name, print_only_headers=parse_only_headers),
             outputs={

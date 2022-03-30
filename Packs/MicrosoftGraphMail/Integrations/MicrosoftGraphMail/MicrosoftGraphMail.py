@@ -4,13 +4,13 @@ from CommonServerUserPython import *
 from typing import Union, Optional
 
 ''' IMPORTS '''
-import requests
 import base64
 import binascii
+import urllib3
 from urllib.parse import quote
 
 # Disable insecure warnings
-requests.packages.urllib3.disable_warnings()
+urllib3.disable_warnings()
 
 ''' GLOBAL VARS '''
 
@@ -63,13 +63,14 @@ class MsGraphClient:
     ITEM_ATTACHMENT = '#microsoft.graph.itemAttachment'
     FILE_ATTACHMENT = '#microsoft.graph.fileAttachment'
 
-    def __init__(self, self_deployed, tenant_id, auth_and_token_url, enc_key, app_name, base_url, use_ssl, proxy,
-                 ok_codes, mailbox_to_fetch, folder_to_fetch, first_fetch_interval, emails_fetch_limit, timeout=10,
-                 endpoint='com'):
+    def __init__(self, self_deployed, tenant_id, auth_and_token_url, enc_key,
+                 app_name, base_url, use_ssl, proxy, ok_codes, mailbox_to_fetch, folder_to_fetch, first_fetch_interval,
+                 emails_fetch_limit, timeout=10, endpoint='com', certificate_thumbprint=None, private_key=None):
 
         self.ms_client = MicrosoftClient(self_deployed=self_deployed, tenant_id=tenant_id, auth_id=auth_and_token_url,
                                          enc_key=enc_key, app_name=app_name, base_url=base_url, verify=use_ssl,
-                                         proxy=proxy, ok_codes=ok_codes, timeout=timeout, endpoint=endpoint)
+                                         proxy=proxy, ok_codes=ok_codes, timeout=timeout, endpoint=endpoint,
+                                         certificate_thumbprint=certificate_thumbprint, private_key=private_key)
 
         self._mailbox_to_fetch = mailbox_to_fetch
         self._folder_to_fetch = folder_to_fetch
@@ -451,7 +452,7 @@ class MsGraphClient:
 
     @staticmethod
     def build_message(to_recipients, cc_recipients, bcc_recipients, subject, body, body_type, flag, importance,
-                      internet_message_headers, attach_ids, attach_names, attach_cids, manual_attachments):
+                      internet_message_headers, attach_ids, attach_names, attach_cids, manual_attachments, reply_to):
         """
         Builds valid message dict.
         For more information https://docs.microsoft.com/en-us/graph/api/resources/message?view=graph-rest-1.0
@@ -460,6 +461,7 @@ class MsGraphClient:
             'toRecipients': MsGraphClient._build_recipient_input(to_recipients),
             'ccRecipients': MsGraphClient._build_recipient_input(cc_recipients),
             'bccRecipients': MsGraphClient._build_recipient_input(bcc_recipients),
+            'replyTo': MsGraphClient._build_recipient_input(reply_to),
             'subject': subject,
             'body': MsGraphClient._build_body_input(body=body, body_type=body_type),
             'bodyPreview': body[:255],
@@ -1419,6 +1421,7 @@ def prepare_args(command, args):
             'to_recipients': argToList(args.get('to')),
             'cc_recipients': argToList(args.get('cc')),
             'bcc_recipients': argToList(args.get('bcc')),
+            'reply_to': argToList(args.get('replyTo')),
             'subject': args.get('subject', ''),
             'body': email_body,
             'body_type': args.get('bodyType', 'html'),
@@ -1470,6 +1473,7 @@ def build_recipients_human_readable(message_content):
     to_recipients = []
     cc_recipients = []
     bcc_recipients = []
+    reply_to_recipients = []
 
     for recipients_dict in message_content.get('toRecipients', {}):
         to_recipients.append(recipients_dict.get('emailAddress', {}).get('address'))
@@ -1480,7 +1484,10 @@ def build_recipients_human_readable(message_content):
     for recipients_dict in message_content.get('bccRecipients', {}):
         bcc_recipients.append(recipients_dict.get('emailAddress', {}).get('address'))
 
-    return to_recipients, cc_recipients, bcc_recipients
+    for recipients_dict in message_content.get('replyTo', {}):
+        reply_to_recipients.append(recipients_dict.get('emailAddress', {}).get('address'))
+
+    return to_recipients, cc_recipients, bcc_recipients, reply_to_recipients
 
 
 def send_email_command(client: MsGraphClient, args):
@@ -1496,10 +1503,11 @@ def send_email_command(client: MsGraphClient, args):
     message_content.pop('attachments', None)
     message_content.pop('internet_message_headers', None)
 
-    to_recipients, cc_recipients, bcc_recipients = build_recipients_human_readable(message_content)
+    to_recipients, cc_recipients, bcc_recipients, reply_to_recipients = build_recipients_human_readable(message_content)
     message_content['toRecipients'] = to_recipients
     message_content['ccRecipients'] = cc_recipients
     message_content['bccRecipients'] = bcc_recipients
+    message_content['replyTo'] = reply_to_recipients
 
     message_content = assign_params(**message_content)
     human_readable = tableToMarkdown('Email was sent successfully.', message_content)
@@ -1510,7 +1518,7 @@ def send_email_command(client: MsGraphClient, args):
 
 def prepare_outputs_for_reply_mail_command(reply, email_to, message_id):
     reply.pop('attachments', None)
-    to_recipients, cc_recipients, bcc_recipients = build_recipients_human_readable(reply)
+    to_recipients, cc_recipients, bcc_recipients, _ = build_recipients_human_readable(reply)
     reply['toRecipients'] = to_recipients
     reply['ccRecipients'] = cc_recipients
     reply['bccRecipients'] = bcc_recipients
@@ -1587,8 +1595,11 @@ def main():
     args: dict = demisto.args()
     params: dict = demisto.params()
     self_deployed: bool = params.get('self_deployed', False)
-    tenant_id: str = params.get('tenant_id', '') or params.get('_tenant_id', '')
-    auth_and_token_url: str = params.get('auth_id', '') or params.get('_auth_id', '')
+    # There're several options for tenant_id & auth_and_token_url due to the recent credentials set supoort enhancment.
+    tenant_id: str = params.get('tenant_id', '') or params.get('_tenant_id', '') or (params.get('creds_tenant_id')
+                                                                                     or {}).get('password', '')
+    auth_and_token_url: str = params.get('auth_id', '') or params.get('_auth_id', '') or (params.get('creds_auth_id')
+                                                                                          or {}).get('password', '')
     enc_key: str = params.get('enc_key', '') or (params.get('credentials') or {}).get('password', '')
     server = params.get('url', '')
     base_url: str = urljoin(server, '/v1.0')
@@ -1597,9 +1608,14 @@ def main():
     ok_codes: tuple = (200, 201, 202, 204)
     use_ssl: bool = not params.get('insecure', False)
     proxy: bool = params.get('proxy', False)
+    certificate_thumbprint: str = params.get('certificate_thumbprint', '')
+    private_key: str = params.get('private_key', '')
 
-    if not enc_key:
-        raise Exception('Key must be provided.')
+    if not self_deployed and not enc_key:
+        raise DemistoException('Key must be provided. For further information see '
+                               'https://xsoar.pan.dev/docs/reference/articles/microsoft-integrations---authentication')
+    elif not enc_key and not (certificate_thumbprint and private_key):
+        raise DemistoException('Key or Certificate Thumbprint and Private Key must be provided.')
     if not auth_and_token_url:
         raise Exception('ID must be provided.')
     if not tenant_id:
@@ -1614,7 +1630,10 @@ def main():
 
     client: MsGraphClient = MsGraphClient(self_deployed, tenant_id, auth_and_token_url, enc_key, app_name, base_url,
                                           use_ssl, proxy, ok_codes, mailbox_to_fetch, folder_to_fetch,
-                                          first_fetch_interval, emails_fetch_limit, timeout, endpoint)
+                                          first_fetch_interval, emails_fetch_limit, timeout, endpoint,
+                                          certificate_thumbprint=certificate_thumbprint,
+                                          private_key=private_key,
+                                          )
 
     command = demisto.command()
     LOG(f'Command being called is {command}')
