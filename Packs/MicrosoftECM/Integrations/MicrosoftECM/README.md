@@ -4,6 +4,12 @@ The configuration manager provides the overall Configuration Management (CM) inf
 
 This integration was integrated and tested with version 1906 of Microsoft Endpoint Configuration Manager.
 ## Prerequisites
+
+* Note: why is remote SSH and winrm needed for connectivity? Else can we make a note linking to https://xsoar.pan.dev/docs/reference/integrations/generic-sql that states if you only need access to sql data base this has easier setup with less permissions needed to connect and request data.
+
+Also can we get list of specific permissions needed in step v. below?
+
+
 - This integration requires root access in order to execute commands. 
 If you configured the server to run Docker images with a non-root internal user make sure to exclude the *demisto/powershell-ubuntu* Docker image as documented [here](https://docs.paloaltonetworks.com/cortex/cortex-xsoar/6-0/cortex-xsoar-admin/docker/docker-hardening-guide/run-docker-with-non-root-internal-users.html)
 - Installation and configuration for Windows Remote Management to support a PowerShell session is a prerequisite in order to support this integration. For more information, refer to the following Microsoft [article](https://docs.microsoft.com/en-us/windows/win32/winrm/installation-and-configuration-for-windows-remote-management).
