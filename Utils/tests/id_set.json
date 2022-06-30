@@ -32647,7 +32647,7 @@
             "Cofense Triage v2 Test": {
                 "name": "Cofense Triage v2 Test",
                 "file_path": "Packs/CofenseTriage/TestPlaybooks/playbook-Cofense_Triage_v2-Test.yml",
-                "fromversion": "5.0.0,",
+                "fromversion": "5.0.0",
                 "implementing_scripts": [
                     "DeleteContext"
                 ],

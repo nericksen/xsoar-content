@@ -73,3 +73,8 @@ ZipStrings
 ExtractInbetween
 TLDs
 ParseEmailFiles
+ParseEmailFilesV2
+RTF
+msg
+lastCompletedTaskEntries
+cgroups
