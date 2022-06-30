@@ -49,6 +49,15 @@ NOT_FORMAT_TO_FORMAT = [  # Start of http:/ replacements.
     # End of Sanity test, no replacement should be done.
 ]
 
+BRACKETS_URL_TO_FORMAT = [
+    ('https://test1.test-api.com/test1/test2/s.testing]', 'https://test1.test-api.com/test1/test2/s.testing'),
+    ('https://test1.test-api.com/test1/test2/s]testing]', 'https://test1.test-api.com/test1/test2/s]testing'),
+    ('https://test1.test-api.com/test1/test2/s]testing', 'https://test1.test-api.com/test1/test2/s]testing'),
+    ('https://test1.test-api.com]', 'https://test1.test-api.com'),
+    ('https://test1.test-api.com[', 'https://test1.test-api.com'),
+    ('https://test1.test-api.com', 'https://test1.test-api.com'),
+]
+
 ATP_REDIRECTS = [('https://na01.safelinks.protection.outlook.com/?url=https%3A%2F%2Foffice.memoriesflower.com'
                   '%2FPermission%2Foffice.php&data=01%7C01%7Cdavid.levin%40mheducation.com'
                   '%7C0ac9a3770fe64fbb21fb08d50764c401%7Cf919b1efc0c347358fca0928ec39d8d5%7C0&sdata=PEoDOerQnha'
@@ -110,6 +119,19 @@ REDIRECT_TEST_CASES = PROOF_POINT_REDIRECTS + REDIRECT_NON_ATP_PROOF_POINT
 
 FORMAT_URL_TEST_DATA = NOT_FORMAT_TO_FORMAT + REDIRECT_TEST_CASES + FORMAT_URL_ADDITIONAL_TEST_CASES
 
+SINGLE_LETTER_TLD = [
+    ('www.test.com', False),
+    ('a./b', True),
+    ('goog./', True),
+    ('goog.l/', True),
+    ('goog.l', True),
+    ('google.#/', False),
+    ('ww.goo./com/', True),
+    ('google.com/./', False),
+    ('hello////,,,,dfdsf', False),
+    ('hello./.com/', True),
+]
+
 
 class TestFormatURL:
     @pytest.mark.parametrize('non_formatted_url, expected', NOT_FORMAT_TO_FORMAT)
@@ -127,6 +149,21 @@ class TestFormatURL:
         from FormatURL import replace_protocol
         assert replace_protocol(non_formatted_url) == expected
 
+    @pytest.mark.parametrize('non_formatted_url, expected', BRACKETS_URL_TO_FORMAT)
+    def test_remove_brackets_from_end_of_url(self, non_formatted_url: str, expected: str):
+        """
+        Given:
+        - non_formatted_url: A URL.
+
+        When:
+        - calling remove_brackets_from_end_of_url
+
+        Then:
+        - Ensure url was formatted properly.
+        """
+        from FormatURL import remove_brackets_from_end_of_url
+        assert remove_brackets_from_end_of_url(non_formatted_url) == expected
+
     @pytest.mark.parametrize('url_, expected', FORMAT_URL_TEST_DATA)
     def test_format_url(self, url_: str, expected: Union[List[str], str]):
         """
@@ -143,6 +180,26 @@ class TestFormatURL:
         if not isinstance(expected, list):
             expected = [expected]
         assert format_urls([url_])[0]['Contents'] == expected
+
+    def test_format_url__failed(self, mocker):
+        """
+        Given:
+        - list of URLs (one invalid)
+
+        When:
+        - Calling format_urls
+
+        Then:
+        - Ensure the function replaced the invalid URL with an empty string
+        """
+        import FormatURL as fu
+        mocker.patch.object(fu, 'format_single_url', side_effect=('a', Exception(), 'b'))
+        mocker.patch.object(fu.demisto, 'error')
+        res = fu.format_urls(['1', '2', '3'])
+        assert len(res) == 3
+        assert res[0]['Contents'] == 'a'
+        assert res[1]['Contents'] == ''
+        assert res[2]['Contents'] == 'b'
 
     @pytest.mark.parametrize('url_, expected', [
         ('https://urldefense.proofpoint.com/v2/url?u=http-3A__links.mkt3337.com_ctt-3Fkn-3D3-26ms-3DMzQ3OTg3MDQS1-26r'
@@ -305,3 +362,40 @@ class TestFormatURL:
         main()
         result_ = mock_results.call_args.args[0]
         assert result_['Contents'] == [TEST_URL_HTTP]
+
+    @pytest.mark.parametrize('non_formatted_url, expected', SINGLE_LETTER_TLD)
+    def test_remove_single_letter_tld_url(self, non_formatted_url: str, expected: bool):
+        """
+        Given:
+            - a url
+
+        When:
+            - Formatting URLs
+
+        Then:
+            - Ensure URLs with a {0,1} letter TLD return true.
+        """
+        from FormatURL import remove_single_letter_tld_url
+        assert remove_single_letter_tld_url(non_formatted_url) == expected
+
+    @pytest.mark.parametrize('inp', [
+        (['a']),
+        (['a', 'a'])
+    ])
+    def test_main__failed_run(self, mocker, inp):
+        """
+        Given:
+            - a list of URLs
+            - main will fail
+        When:
+            - Calling main
+        Then:
+            - Main returns a list of empty strings the size of input
+        """
+        import FormatURL as fu
+        mocker.patch.object(fu, 'format_urls', side_effect=Exception('test'))
+        mocker.patch.object(fu.demisto, 'error')
+        mocker.patch.object(fu.demisto, 'args', return_value={'input': inp})
+        actual = fu.main()
+        assert len(actual) == len(inp)
+        assert actual == ([''] * len(actual))
