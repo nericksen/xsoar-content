@@ -1,17 +1,79 @@
-from typing import Union
-import demistomock as demisto
 from CommonServerPython import *
 from ReversingLabs.SDK.ticloud import FileReputation, AVScanners, FileAnalysis, RHA1FunctionalSimilarity, \
     RHA1Analytics, URIStatistics, URIIndex, AdvancedSearch, ExpressionSearch, FileDownload, FileUpload, \
-    URLThreatIntelligence, AnalyzeURL, DynamicAnalysis, CertificateAnalytics
+    URLThreatIntelligence, AnalyzeURL, DynamicAnalysis, CertificateAnalytics, YARAHunting, YARARetroHunting, \
+    ReanalyzeFile, ImpHashSimilarity
+from ReversingLabs.SDK.helper import NotFoundError
 
-VERSION = "v2.0.0"
+
+VERSION = "v2.3.0"
 USER_AGENT = f"ReversingLabs XSOAR TitaniumCloud {VERSION}"
 
 TICLOUD_URL = demisto.params().get("base")
 USERNAME = demisto.params().get("credentials", {}).get("identifier")
 PASSWORD = demisto.params().get("credentials", {}).get("password")
 RELIABILITY = demisto.params().get("reliability", "C - Fairly reliable")
+
+VERIFY_CERTS = demisto.getParam("verify_certs")
+
+HTTP_PROXY = demisto.params().get("http_proxy", None)
+HTTP_PROXY_USERNAME = demisto.params().get("http_credentials", {}).get("identifier", None)
+HTTP_PROXY_PASSWORD = demisto.params().get("http_credentials", {}).get("password", None)
+
+HTTPS_PROXY = demisto.params().get("https_proxy", None)
+HTTPS_PROXY_USERNAME = demisto.params().get("https_credentials", {}).get("identifier", None)
+HTTPS_PROXY_PASSWORD = demisto.params().get("https_credentials", {}).get("password", None)
+
+
+def format_proxy(addr, username=None, password=None):
+    if addr.startswith("http://"):
+        protocol = addr[:7]
+        proxy_name = addr[7:]
+    elif addr.startswith("https://"):
+        protocol = addr[:8]
+        proxy_name = addr[8:]
+    else:
+        return_error("Proxy address needs to start with either 'http://' or 'https://'")
+
+    if username:
+        if password:
+            proxy = f"{protocol}{username}:{password}@{proxy_name}"
+        else:
+            proxy = f"{protocol}{username}@{proxy_name}"
+    else:
+        proxy = f"{protocol}{proxy_name}"
+
+    return proxy
+
+
+def return_proxies():
+    proxies = {}
+
+    if HTTP_PROXY:
+        http_proxy = format_proxy(
+            addr=HTTP_PROXY,
+            username=HTTP_PROXY_USERNAME,
+            password=HTTP_PROXY_PASSWORD
+        )
+
+        proxies["http"] = http_proxy
+
+    if HTTPS_PROXY:
+        https_proxy = format_proxy(
+            addr=HTTPS_PROXY,
+            username=HTTPS_PROXY_USERNAME,
+            password=HTTPS_PROXY_PASSWORD
+        )
+
+        proxies["https"] = https_proxy
+
+    if proxies:
+        return proxies
+    else:
+        return None
+
+
+PROXIES = return_proxies()
 
 
 def classification_to_score(classification):
@@ -28,7 +90,9 @@ def test_module_command():
     mwp = FileReputation(
         host=TICLOUD_URL,
         username=USERNAME,
-        password=PASSWORD
+        password=PASSWORD,
+        proxies=PROXIES,
+        verify=VERIFY_CERTS
     )
 
     try:
@@ -44,7 +108,10 @@ def file_reputation_command():
     mwp = FileReputation(
         host=TICLOUD_URL,
         username=USERNAME,
-        password=PASSWORD
+        password=PASSWORD,
+        user_agent=USER_AGENT,
+        proxies=PROXIES,
+        verify=VERIFY_CERTS
     )
 
     hash_value = demisto.getArg("hash")
@@ -129,7 +196,10 @@ def av_scanners_command():
     xref = AVScanners(
         host=TICLOUD_URL,
         username=USERNAME,
-        password=PASSWORD
+        password=PASSWORD,
+        user_agent=USER_AGENT,
+        proxies=PROXIES,
+        verify=VERIFY_CERTS
     )
     hash_value = demisto.getArg("hash")
 
@@ -211,7 +281,10 @@ def file_analysis_command():
     rldata = FileAnalysis(
         host=TICLOUD_URL,
         username=USERNAME,
-        password=PASSWORD
+        password=PASSWORD,
+        user_agent=USER_AGENT,
+        proxies=PROXIES,
+        verify=VERIFY_CERTS
     )
     hash_value = demisto.getArg("hash")
 
@@ -297,7 +370,10 @@ def functional_similarity_command():
     similarity = RHA1FunctionalSimilarity(
         host=TICLOUD_URL,
         username=USERNAME,
-        password=PASSWORD
+        password=PASSWORD,
+        user_agent=USER_AGENT,
+        proxies=PROXIES,
+        verify=VERIFY_CERTS
     )
     hash_value = demisto.getArg("hash")
     limit = demisto.getArg("result_limit")
@@ -307,25 +383,35 @@ def functional_similarity_command():
     except Exception as e:
         return_error(str(e))
 
-    results = CommandResults(
-        outputs_prefix='ReversingLabs',
-        outputs={'functional_similarity': sha1_list},
-        readable_output="Full report is returned in a downloadable file"
-    )
+    results = functional_similarity_output(sha1_list)
 
     file_results = fileResult(
         f'RHA1 Functional Similarity report file for hash {hash_value}',
         json.dumps(sha1_list, indent=4),
         file_type=EntryType.ENTRY_INFO_FILE
     )
+
     return_results([results, file_results])
+
+
+def functional_similarity_output(sha1_list):
+    results = CommandResults(
+        outputs_prefix='ReversingLabs',
+        outputs={'functional_similarity': sha1_list},
+        readable_output="Full report is returned in a downloadable file"
+    )
+
+    return results
 
 
 def rha1_analytics_command():
     rha_analytics = RHA1Analytics(
         host=TICLOUD_URL,
         username=USERNAME,
-        password=PASSWORD
+        password=PASSWORD,
+        user_agent=USER_AGENT,
+        proxies=PROXIES,
+        verify=VERIFY_CERTS
     )
     hash_value = demisto.getArg("hash")
 
@@ -406,7 +492,10 @@ def uri_statistics_command():
     uri_stats = URIStatistics(
         host=TICLOUD_URL,
         username=USERNAME,
-        password=PASSWORD
+        password=PASSWORD,
+        user_agent=USER_AGENT,
+        proxies=PROXIES,
+        verify=VERIFY_CERTS
     )
     uri = demisto.getArg("uri")
 
@@ -502,7 +591,10 @@ def uri_index_command():
     uri_index = URIIndex(
         host=TICLOUD_URL,
         username=USERNAME,
-        password=PASSWORD
+        password=PASSWORD,
+        user_agent=USER_AGENT,
+        proxies=PROXIES,
+        verify=VERIFY_CERTS
     )
 
     uri = demisto.getArg("uri")
@@ -513,6 +605,12 @@ def uri_index_command():
     except Exception as e:
         return_error(str(e))
 
+    results, file_results = uri_index_output(sha1_list, uri)
+
+    return_results([results, file_results])
+
+
+def uri_index_output(sha1_list, uri):
     results = CommandResults(
         outputs_prefix='ReversingLabs',
         outputs={'uri_index': sha1_list},
@@ -525,14 +623,17 @@ def uri_index_command():
         file_type=EntryType.ENTRY_INFO_FILE
     )
 
-    return_results([results, file_results])
+    return results, file_results
 
 
 def advanced_search_command():
     advanced_search = AdvancedSearch(
         host=TICLOUD_URL,
         username=USERNAME,
-        password=PASSWORD
+        password=PASSWORD,
+        user_agent=USER_AGENT,
+        proxies=PROXIES,
+        verify=VERIFY_CERTS
     )
 
     query = demisto.getArg("query")
@@ -543,6 +644,12 @@ def advanced_search_command():
     except Exception as e:
         return_error(str(e))
 
+    results, file_results = advanced_search_output(result_list)
+
+    return_results([results, file_results])
+
+
+def advanced_search_output(result_list):
     results = CommandResults(
         outputs_prefix='ReversingLabs',
         outputs={'advanced_search': result_list},
@@ -555,14 +662,17 @@ def advanced_search_command():
         file_type=EntryType.ENTRY_INFO_FILE
     )
 
-    return_results([results, file_results])
+    return results, file_results
 
 
 def expression_search_command():
     expression_search = ExpressionSearch(
         host=TICLOUD_URL,
         username=USERNAME,
-        password=PASSWORD
+        password=PASSWORD,
+        user_agent=USER_AGENT,
+        proxies=PROXIES,
+        verify=VERIFY_CERTS
     )
 
     query = demisto.getArg("query")
@@ -579,6 +689,12 @@ def expression_search_command():
     except Exception as e:
         return_error(str(e))
 
+    results, file_results = expression_search_output(result_list)
+
+    return_results([results, file_results])
+
+
+def expression_search_output(result_list):
     results = CommandResults(
         outputs_prefix='ReversingLabs',
         outputs={'expression_search': result_list},
@@ -591,14 +707,17 @@ def expression_search_command():
         file_type=EntryType.ENTRY_INFO_FILE
     )
 
-    return_results([results, file_results])
+    return results, file_results
 
 
 def file_download_command():
     file_download = FileDownload(
         host=TICLOUD_URL,
         username=USERNAME,
-        password=PASSWORD
+        password=PASSWORD,
+        user_agent=USER_AGENT,
+        proxies=PROXIES,
+        verify=VERIFY_CERTS
     )
 
     hash_value = demisto.getArg("hash")
@@ -608,18 +727,29 @@ def file_download_command():
     except Exception as e:
         return_error(str(e))
 
+    results = file_download_output(hash_value)
+
+    file_results = fileResult(hash_value, response.content)
+
+    return_results([results, file_results])
+
+
+def file_download_output(hash_value):
     results = CommandResults(
         readable_output=f"Requested sample is available for download under the name {hash_value}"
     )
 
-    return_results([results, fileResult(hash_value, response.content)])
+    return results
 
 
 def file_upload_command():
     file_upload = FileUpload(
         host=TICLOUD_URL,
         username=USERNAME,
-        password=PASSWORD
+        password=PASSWORD,
+        user_agent=USER_AGENT,
+        proxies=PROXIES,
+        verify=VERIFY_CERTS
     )
 
     file_entry = demisto.getFilePath(demisto.getArg("entryId"))
@@ -639,7 +769,10 @@ def url_report_command():
     url_ti = URLThreatIntelligence(
         host=TICLOUD_URL,
         username=USERNAME,
-        password=PASSWORD
+        password=PASSWORD,
+        user_agent=USER_AGENT,
+        proxies=PROXIES,
+        verify=VERIFY_CERTS
     )
 
     url = demisto.getArg("url")
@@ -732,7 +865,10 @@ def analyze_url_command():
     analyze_url = AnalyzeURL(
         host=TICLOUD_URL,
         username=USERNAME,
-        password=PASSWORD
+        password=PASSWORD,
+        user_agent=USER_AGENT,
+        proxies=PROXIES,
+        verify=VERIFY_CERTS
     )
 
     url = demisto.getArg("url")
@@ -768,7 +904,10 @@ def detonate_sample_command():
     sandbox = DynamicAnalysis(
         host=TICLOUD_URL,
         username=USERNAME,
-        password=PASSWORD
+        password=PASSWORD,
+        user_agent=USER_AGENT,
+        proxies=PROXIES,
+        verify=VERIFY_CERTS
     )
 
     sha1 = demisto.getArg("sha1")
@@ -805,7 +944,10 @@ def dynamic_analysis_results_command():
     sandbox = DynamicAnalysis(
         host=TICLOUD_URL,
         username=USERNAME,
-        password=PASSWORD
+        password=PASSWORD,
+        user_agent=USER_AGENT,
+        proxies=PROXIES,
+        verify=VERIFY_CERTS
     )
 
     sha1 = demisto.getArg("sha1")
@@ -817,15 +959,32 @@ def dynamic_analysis_results_command():
 
     response_json = response.json()
 
+    results, file_results = dynamic_analysis_results_output(response_json, sha1)
+
+    return_results([results, file_results])
+
+
+def dynamic_analysis_results_output(response_json, sha1):
+    classification = response_json.get("rl", {}).get("report", {}).get("classification")
+    classification = classification.upper()
+    md5 = response_json.get("rl", {}).get("report", {}).get("md5")
+    sha256 = response_json.get("rl", {}).get("report", {}).get("sha256")
+
+    d_bot_score = classification_to_score(classification)
+
     dbot_score = Common.DBotScore(
         indicator=sha1,
         indicator_type=DBotScoreType.FILE,
         integration_name='ReversingLabs TitaniumCloud v2',
-        score=0
+        malicious_description=classification,
+        score=d_bot_score,
+        reliability=RELIABILITY
     )
 
     indicator = Common.File(
         sha1=sha1,
+        md5=md5,
+        sha256=sha256,
         dbot_score=dbot_score
     )
 
@@ -842,14 +1001,17 @@ def dynamic_analysis_results_command():
         file_type=EntryType.ENTRY_INFO_FILE
     )
 
-    return_results([results, file_results])
+    return results, file_results
 
 
 def certificate_analytics_command():
     cert_analytics = CertificateAnalytics(
         host=TICLOUD_URL,
         username=USERNAME,
-        password=PASSWORD
+        password=PASSWORD,
+        user_agent=USER_AGENT,
+        proxies=PROXIES,
+        verify=VERIFY_CERTS
     )
 
     thumbprint = demisto.getArg("certificate_thumbprint")
@@ -861,6 +1023,12 @@ def certificate_analytics_command():
 
     response_json = response.json()
 
+    results, file_results = certificate_analytics_output(response_json, thumbprint)
+
+    return_results([results, file_results])
+
+
+def certificate_analytics_output(response_json, thumbprint):
     results = CommandResults(
         outputs_prefix='ReversingLabs',
         outputs={'certificate_analytics': response_json},
@@ -873,7 +1041,484 @@ def certificate_analytics_command():
         file_type=EntryType.ENTRY_INFO_FILE
     )
 
+    return results, file_results
+
+
+def yara_ruleset_command():
+    yara = YARAHunting(
+        host=TICLOUD_URL,
+        username=USERNAME,
+        password=PASSWORD,
+        user_agent=USER_AGENT,
+        proxies=PROXIES,
+        verify=VERIFY_CERTS
+    )
+
+    yara_action = demisto.getArg("yara_action")
+    ruleset_name = demisto.getArg("ruleset_name")
+    ruleset_text = demisto.getArg("ruleset_text")
+    sample_available = demisto.getArg("sample_available")
+
+    if yara_action == "CREATE RULESET":
+        if ruleset_text:
+            ruleset_text = str(ruleset_text)
+        else:
+            return_error("When using the CREATE RULESET action, the rulesetText argument is required.")
+
+        if sample_available:
+            sample_available = argToBoolean(sample_available)
+
+        try:
+            response = yara.create_ruleset(
+                ruleset_name=ruleset_name,
+                ruleset_text=ruleset_text,
+                sample_available=sample_available
+            )
+        except Exception as e:
+            return_error(str(e))
+
+        output_key = "create_yara_ruleset"
+
+    elif yara_action == "DELETE RULESET":
+        try:
+            response = yara.delete_ruleset(
+                ruleset_name=ruleset_name
+            )
+        except Exception as e:
+            return_error(str(e))
+
+        output_key = "delete_yara_ruleset"
+
+    elif yara_action == "GET RULESET INFO":
+        try:
+            response = yara.get_ruleset_info(
+                ruleset_name=ruleset_name
+            )
+        except Exception as e:
+            return_error(str(e))
+
+        output_key = "get_yara_ruleset_info"
+
+    elif yara_action == "GET RULESET TEXT":
+        try:
+            response = yara.get_ruleset_text(
+                ruleset_name=ruleset_name
+            )
+        except Exception as e:
+            return_error(str(e))
+
+        output_key = "get_yara_ruleset_text"
+
+    else:
+        return_error(f"Yara ruleset action {yara_action} does not exist.")
+
+    response_json = response.json()
+
+    results = yara_ruleset_output(output_key, response_json)
+
+    return_results(results)
+
+
+def yara_ruleset_output(output_key, response_json):
+    results = CommandResults(
+        outputs_prefix="ReversingLabs",
+        outputs={output_key: response_json},
+        readable_output=response_json
+    )
+
+    return results
+
+
+def yara_matches_feed_command():
+    yara = YARAHunting(
+        host=TICLOUD_URL,
+        username=USERNAME,
+        password=PASSWORD,
+        user_agent=USER_AGENT,
+        proxies=PROXIES,
+        verify=VERIFY_CERTS
+    )
+
+    time_format = demisto.getArg("time_format")
+    time_value = demisto.getArg("time_value")
+
+    try:
+        response = yara.yara_matches_feed(
+            time_format=time_format,
+            time_value=time_value
+        )
+    except Exception as e:
+        return_error(str(e))
+
+    response_json = response.json()
+    results = yara_matches_feed_output(response_json=response_json, time_value=time_value)
+
+    return_results(results)
+
+
+def yara_matches_feed_output(response_json, time_value):
+    feed = response_json.get("rl", {}).get("feed", {})
+    entries = tableToMarkdown("Entries", feed.get("entries", []))
+    last_timestamp = feed.get("last_timestamp")
+    range_from = feed.get("time_range", {}).get("from")
+    range_to = feed.get("time_range", {}).get("to")
+
+    markdown = f"""## ReversingLabs YARA Matches Feed for time value {time_value}\n **Last timestamp**: {last_timestamp}
+    **From**: {range_from}
+    **To**: {range_to}
+    """
+    markdown = f"{markdown}\n {entries}"
+
+    results = CommandResults(
+        outputs_prefix="ReversingLabs",
+        outputs={"yara_matches_feed": response_json},
+        readable_output=markdown
+    )
+
+    return results
+
+
+def yara_retro_actions_command():
+    retro = YARARetroHunting(
+        host=TICLOUD_URL,
+        username=USERNAME,
+        password=PASSWORD,
+        user_agent=USER_AGENT,
+        proxies=PROXIES,
+        verify=VERIFY_CERTS
+    )
+
+    retro_action = demisto.getArg("yara_retro_action")
+    ruleset_name = demisto.getArg("ruleset_name")
+
+    if retro_action == "ENABLE RETRO HUNT":
+        try:
+            response = retro.enable_retro_hunt(ruleset_name=ruleset_name)
+        except Exception as e:
+            return_error(str(e))
+
+        output_key = "enable_yara_retro"
+
+    elif retro_action == "START RETRO HUNT":
+        try:
+            response = retro.start_retro_hunt(ruleset_name=ruleset_name)
+        except Exception as e:
+            return_error(str(e))
+
+        output_key = "start_yara_retro"
+
+    elif retro_action == "CHECK STATUS":
+        try:
+            response = retro.check_status(ruleset_name=ruleset_name)
+        except Exception as e:
+            return_error(str(e))
+
+        output_key = "check_yara_retro_status"
+
+    elif retro_action == "CANCEL RETRO HUNT":
+        try:
+            response = retro.cancel_retro_hunt(ruleset_name=ruleset_name)
+        except Exception as e:
+            return_error(str(e))
+
+        output_key = "cancel_yara_retro"
+
+    else:
+        return_error(f"YARA Retro action {retro_action} does not exist.")
+
+    response_json = response.json()
+
+    results = yara_retro_actions_output(output_key, response_json)
+
+    return_results(results)
+
+
+def yara_retro_actions_output(output_key, response_json):
+    results = CommandResults(
+        outputs_prefix="ReversingLabs",
+        outputs={output_key: response_json},
+        readable_output=response_json
+    )
+
+    return results
+
+
+def yara_retro_matches_feed_command():
+    yara = YARARetroHunting(
+        host=TICLOUD_URL,
+        username=USERNAME,
+        password=PASSWORD,
+        user_agent=USER_AGENT,
+        proxies=PROXIES,
+        verify=VERIFY_CERTS
+    )
+
+    time_format = demisto.getArg("time_format")
+    time_value = demisto.getArg("time_value")
+
+    try:
+        response = yara.yara_retro_matches_feed(
+            time_format=time_format,
+            time_value=time_value
+        )
+    except Exception as e:
+        return_error(str(e))
+
+    response_json = response.json()
+    results = yara_retro_matches_feed_output(response_json=response_json, time_value=time_value)
+
+    return_results(results)
+
+
+def yara_retro_matches_feed_output(response_json, time_value):
+    feed = response_json.get("rl", {}).get("feed", {})
+    entries = tableToMarkdown("Entries", feed.get("entries", []))
+    last_timestamp = feed.get("last_timestamp")
+    range_from = feed.get("time_range", {}).get("from")
+    range_to = feed.get("time_range", {}).get("to")
+
+    markdown = f"""## ReversingLabs YARA Retro Matches Feed for time value {time_value}\n **Last timestamp**: {last_timestamp}
+    **From**: {range_from}
+    **To**: {range_to}
+    """
+    markdown = f"{markdown}\n {entries}"
+
+    results = CommandResults(
+        outputs_prefix="ReversingLabs",
+        outputs={"yara_retro_matches_feed": response_json},
+        readable_output=markdown
+    )
+
+    return results
+
+
+def reanalyze_sample_command():
+    reanalyze = ReanalyzeFile(
+        host=TICLOUD_URL,
+        username=USERNAME,
+        password=PASSWORD,
+        user_agent=USER_AGENT,
+        proxies=PROXIES,
+        verify=VERIFY_CERTS
+    )
+
+    sample_hash = demisto.getArg("hash")
+
+    try:
+        response = reanalyze.reanalyze_samples(
+            sample_hashes=sample_hash
+        )
+    except Exception as e:
+        return_error(str(e))
+
+    results = reanalyze_sample_output(response.text)
+
+    return_results(results)
+
+
+def reanalyze_sample_output(response_text):
+    results = CommandResults(
+        outputs_prefix="ReversingLabs",
+        outputs={"reanalyze_sample": response_text},
+        readable_output=response_text
+    )
+
+    return results
+
+
+def imphash_similarity_command():
+    imphash_similarity = ImpHashSimilarity(
+        host=TICLOUD_URL,
+        username=USERNAME,
+        password=PASSWORD,
+        user_agent=USER_AGENT,
+        proxies=PROXIES,
+        verify=VERIFY_CERTS
+    )
+
+    imphash = demisto.getArg("imphash")
+    max_results = int(demisto.getArg("max_results"))
+
+    try:
+        response = imphash_similarity.get_imphash_index_aggregated(
+            imphash=imphash,
+            max_results=max_results
+        )
+    except Exception as e:
+        return_error(str(e))
+
+    results = imphash_similarity_output(response=response, imphash=imphash)
+
+    return_results(results)
+
+
+def imphash_similarity_output(response, imphash):
+    hashes = tableToMarkdown("SHA-1 list", response, headers="Hashes")
+    markdown = f"## ReversingLabs Imphash Similarity for {imphash}\n {hashes}"
+
+    results = CommandResults(
+        outputs_prefix="ReversingLabs",
+        outputs={"imphash_similarity": response},
+        readable_output=markdown
+    )
+
+    return results
+
+
+def url_downloaded_files_command():
+    url_ti = URLThreatIntelligence(
+        host=TICLOUD_URL,
+        username=USERNAME,
+        password=PASSWORD,
+        user_agent=USER_AGENT,
+        proxies=PROXIES,
+        verify=VERIFY_CERTS
+    )
+
+    url = demisto.getArg("url")
+    extended = argToBoolean(demisto.getArg("extended_results"))
+    classification = demisto.getArg("classification")
+    last_analysis = argToBoolean(demisto.getArg("last_analysis"))
+    analysis_id = demisto.getArg("analysis_id")
+    if analysis_id:
+        analysis_id = int(analysis_id)
+    results_per_page = int(demisto.getArg("results_per_page"))
+    max_results = int(demisto.getArg("max_results"))
+
+    try:
+        response = url_ti.get_downloaded_files_aggregated(
+            url_input=url,
+            extended=extended,
+            classification=classification,
+            last_analysis=last_analysis,
+            analysis_id=analysis_id,
+            results_per_page=results_per_page,
+            max_results=max_results
+        )
+    except NotFoundError:
+        return_results("No results were found for this input.")
+        sys.exit()
+    except Exception as e:
+        return_error(str(e))
+
+    results = url_downloaded_files_output(response, url)
+
+    return_results(results)
+
+
+def url_downloaded_files_output(response, url):
+    files = tableToMarkdown("Downloaded files", response)
+    markdown = f"## ReversingLabs Files Downloaded from URL {url}\n {files}"
+
+    results = CommandResults(
+        outputs_prefix="ReversingLabs",
+        outputs={"url_downloaded_files": response},
+        readable_output=markdown
+    )
+
+    return results
+
+
+def url_latest_analyses_feed_command():
+    url_ti = URLThreatIntelligence(
+        host=TICLOUD_URL,
+        username=USERNAME,
+        password=PASSWORD,
+        user_agent=USER_AGENT,
+        proxies=PROXIES,
+        verify=VERIFY_CERTS
+    )
+
+    results_per_page = int(demisto.getArg("results_per_page"))
+    max_results = int(demisto.getArg("max_results"))
+
+    try:
+        response = url_ti.get_latest_url_analysis_feed_aggregated(
+            results_per_page=results_per_page,
+            max_results=max_results
+        )
+    except NotFoundError:
+        return_results("No results were found for this input.")
+        sys.exit()
+    except Exception as e:
+        return_error(str(e))
+
+    results, file_results = url_latest_analyses_feed_output(response)
+
     return_results([results, file_results])
+
+
+def url_latest_analyses_feed_output(response):
+    analyses = tableToMarkdown("Latest URL analyses", response)
+    markdown = f"## ReversingLabs Latest URL Analyses Feed\n {analyses}"
+
+    results = CommandResults(
+        outputs_prefix="ReversingLabs",
+        outputs={"url_latest_analyses_feed": response},
+        readable_output=markdown
+    )
+
+    file_results = fileResult(
+        "ReversingLabs Latest URL Analyses Feed",
+        json.dumps(response, indent=4),
+        file_type=EntryType.ENTRY_INFO_FILE
+
+    )
+
+    return results, file_results
+
+
+def url_analyses_feed_from_date_command():
+    url_ti = URLThreatIntelligence(
+        host=TICLOUD_URL,
+        username=USERNAME,
+        password=PASSWORD,
+        user_agent=USER_AGENT,
+        proxies=PROXIES,
+        verify=VERIFY_CERTS
+    )
+
+    time_format = demisto.getArg("time_format")
+    start_time = demisto.getArg("start_time")
+    results_per_page = int(demisto.getArg("results_per_page"))
+    max_results = int(demisto.getArg("max_results"))
+
+    try:
+        response = url_ti.get_url_analysis_feed_from_date_aggregated(
+            time_format=time_format,
+            start_time=start_time,
+            results_per_page=results_per_page,
+            max_results=max_results
+        )
+    except NotFoundError:
+        return_results("No results were found for this input.")
+        sys.exit()
+    except Exception as e:
+        return_error(str(e))
+
+    results, file_results = url_analyses_feed_from_date_output(response, start_time)
+
+    return_results([results, file_results])
+
+
+def url_analyses_feed_from_date_output(response, start_time):
+    analyses = tableToMarkdown("URL analyses from specified date", response)
+    markdown = f"## ReversingLabs URL Analyses Feed From Date {start_time}\n {analyses}"
+
+    results = CommandResults(
+        outputs_prefix="ReversingLabs",
+        outputs={"url_analyses_feed_from_date": response},
+        readable_output=markdown
+    )
+
+    file_results = fileResult(
+        f"ReversingLabs URL Analyses Feed From Date {start_time}",
+        json.dumps(response, indent=4),
+        file_type=EntryType.ENTRY_INFO_FILE
+
+    )
+
+    return results, file_results
 
 
 def main():
@@ -929,6 +1574,33 @@ def main():
 
     elif command == "reversinglabs-titaniumcloud-certificate-analytics":
         certificate_analytics_command()
+
+    elif command == "reversinglabs-titaniumcloud-yara-ruleset-actions":
+        yara_ruleset_command()
+
+    elif command == "reversinglabs-titaniumcloud-yara-matches-feed":
+        yara_matches_feed_command()
+
+    elif command == "reversinglabs-titaniumcloud-yara-retro-hunt-actions":
+        yara_retro_actions_command()
+
+    elif command == "reversinglabs-titaniumcloud-yara-retro-matches-feed":
+        yara_retro_matches_feed_command()
+
+    elif command == "reversinglabs-titaniumcloud-reanalyze-sample":
+        reanalyze_sample_command()
+
+    elif command == "reversinglabs-titaniumcloud-imphash-similarity":
+        imphash_similarity_command()
+
+    elif command == "reversinglabs-titaniumcloud-url-downloaded-files":
+        url_downloaded_files_command()
+
+    elif command == "reversinglabs-titaniumcloud-url-latest-analyses-feed":
+        url_latest_analyses_feed_command()
+
+    elif command == "reversinglabs-titaniumcloud-url-analyses-feed-from-date":
+        url_analyses_feed_from_date_command()
 
     else:
         return_error(f"Command {command} does not exist")

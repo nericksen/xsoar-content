@@ -13,6 +13,8 @@ from typing import Tuple, Optional, List, Dict
 # Disable insecure warnings
 urllib3.disable_warnings()
 BATCH_SIZE = 2000
+CHUNK_SIZE = 1024 * 1024 * 10  # 10 MB
+
 INTEGRATION_NAME = 'Recorded Future'
 
 # taken from recorded future docs
@@ -142,7 +144,7 @@ class Client(BaseClient):
         )
         rkwargs['stream'] = True
         rkwargs['verify'] = self._verify
-        rkwargs['timeout'] = self.polling_timeout
+        rkwargs['timeout'] = self.polling_timeout  # type:ignore[typeddict-item]
 
         try:
             response = _session.send(prepared_request, **rkwargs)
@@ -167,25 +169,36 @@ class Client(BaseClient):
                 f.write(response_content)
         else:
             with open("response.txt", "w") as f:
-                f.write(response.text)
+                for chunk in response.iter_content(CHUNK_SIZE, decode_unicode=True):
+                    if chunk:
+                        f.write(chunk)
+        demisto.info('done build_iterator')
 
     def get_batches_from_file(self, limit):
+        demisto.info('reading from file')
+        # we do this try to make sure the file gets deleted at the end
+        try:
+            file_stream = open("response.txt", 'rt')
+            columns = file_stream.readline()  # get the headers from the csv file.
+            columns = columns.replace("\"", "").strip().split(",")  # type:ignore  # '"a","b"\n' -> ["a", "b"]
 
-        file_stream = open("response.txt", 'rt')
-        columns = file_stream.readline()  # get the headers from the csv file.
-        columns = columns.replace("\"", "").strip().split(",")  # '"a","b"\n' -> ["a", "b"]
+            batch_size = limit if limit else BATCH_SIZE
+            while True:
 
-        batch_size = limit if limit else BATCH_SIZE
-        while True:
+                feed_batch = [feed for _, feed in zip(range(batch_size + 1), file_stream) if feed]
 
-            feed_batch = [feed for _, feed in zip(range(batch_size + 1), file_stream) if feed]
-
-            if not feed_batch:
-                file_stream.close()
+                if not feed_batch:
+                    file_stream.close()
+                    return
+                demisto.info(f'yielding, {batch_size=}')
+                yield csv.DictReader(feed_batch, fieldnames=columns)
+        finally:
+            try:
                 os.remove("response.txt")
-                return
-
-            yield csv.DictReader(feed_batch, fieldnames=columns)
+                demisto.info('file was deleted')
+            except OSError:
+                demisto.info('file could not be deleted')
+                pass
 
     def calculate_indicator_score(self, risk_from_feed):
         """Calculates the Dbot score of an indicator based on its Risk value from the feed.
@@ -269,6 +282,7 @@ def test_module(client: Client, *args) -> Tuple[str, dict, dict]:
     client.run_parameters_validations()
 
     for service in client.services:
+        demisto.debug(f'iterating over {service=}')
         # if there are risk rules, select the first one for test
         risk_rule = client.risk_rule[0] if client.risk_rule else None
         client.build_iterator(service, client.indicator_type, risk_rule)
@@ -376,6 +390,7 @@ def fetch_indicators_command(client, indicator_type, risk_rule: Optional[str] = 
     """
     indicators_value_set: Set[str] = set()
     for service in client.services:
+        demisto.debug(f'iterating over {service=}')
         client.build_iterator(service, indicator_type, risk_rule)
         feed_batches = client.get_batches_from_file(limit)
         for feed_dicts in feed_batches:
@@ -425,7 +440,7 @@ def fetch_indicators_command(client, indicator_type, risk_rule: Optional[str] = 
             yield indicators
 
 
-def get_indicators_command(client, args) -> Tuple[str, Dict[Any, Any], List[Dict]]:
+def get_indicators_command(client, args) -> Tuple[str, Dict[Any, Any], List[Dict]]:  # pragma: no cover
     """Retrieves indicators from the Recorded Future feed to the war-room.
         Args:
             client(Client): Recorded Future Feed client.
@@ -494,9 +509,12 @@ def get_risk_rules_command(client: Client, args) -> Tuple[str, dict, dict]:
     return hr, {'RecordedFutureFeed.RiskRule(val.Name == obj.Name)': entry_result}, result
 
 
-def main():
+def main():  # pragma: no cover
     params = demisto.params()
-    client = Client(RF_INDICATOR_TYPES[params.get('indicator_type')], params.get('api_token'), params.get('services'),
+    api_token = params.get('credentials_api_token', {}).get('password') or params.get('api_token')
+    if not api_token:
+        raise DemistoException('API Token must be provided.')
+    client = Client(RF_INDICATOR_TYPES[params.get('indicator_type')], api_token, params.get('services'),
                     params.get('risk_rule'), params.get('fusion_file_path'), params.get('insecure'),
                     params.get('polling_timeout'), params.get('proxy'), params.get('threshold'),
                     params.get('risk_score_threshold'), argToList(params.get('feedTags')), params.get('tlp_color'))

@@ -1,7 +1,7 @@
 
 var baseUrl = 'https://api.isightpartners.com'; // iSight base url
 var publicKey = params.publicKey;
-var privateKey = params.privateKey;
+var privateKey = params.credentials_private_key? params.credentials_private_key.password : params.privateKey;
 var acceptVersion = params.version;
 var insecure = params.insecure;
 var proxy = params.proxy;
@@ -44,6 +44,9 @@ var getHeaders = function(query) {
         timestamp = timestamp.substring(0,timestamp.indexOf('+'));
     } else if (timestamp.indexOf('-') > 0) {
         timestamp = timestamp.substring(0,timestamp.indexOf('-'));
+    }
+    if (!privateKey){
+        throw('Private Key must be provided.')
     }
     message = query + acceptVersion + 'application/json' + timestamp;
     hashed = HMAC_SHA256_MAC(privateKey, message);
@@ -138,7 +141,8 @@ var basicSearchIP = function(ip) {
                     Indicator: ip,
                     Type: 'IP',
                     Vendor: VENDOR_NAME,
-                    Score: 0
+                    Score: 0,
+                    Reliability: params.integrationReliability
                 }
             }
         };
@@ -174,7 +178,8 @@ var basicSearchDomain = function(domain) {
                     Indicator: domain,
                     Type: 'domain',
                     Vendor: VENDOR_NAME,
-                    Score: 0
+                    Score: 0,
+                    Reliability: params.integrationReliability
                 }
             }
         };
@@ -210,7 +215,8 @@ var basicSearchfile = function(key, value) {
                     Indicator: value,
                     Type: 'file',
                     Vendor: VENDOR_NAME,
-                    Score: 0
+                    Score: 0,
+                    Reliability: params.integrationReliability
                 }
             }
         };

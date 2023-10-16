@@ -1,8 +1,8 @@
+import demistomock as demisto  # noqa: F401
+from CommonServerPython import *  # noqa: F401
 import hashlib
 from typing import Dict, List
 from urllib3 import disable_warnings
-import demistomock as demisto
-from CommonServerPython import *
 from CommonServerUserPython import *
 
 
@@ -240,7 +240,8 @@ def get_report_context(result: Dict, threshold=None) -> Dict:
         data: Dict = {}
         dbotscore = {
             'Vendor': 'Lastline',
-            'Score': 0
+            'Score': 0,
+            'Reliability': demisto.params().get('integrationReliability')
         }
         dbotscore_list = []
         if 'score' in result['data']:

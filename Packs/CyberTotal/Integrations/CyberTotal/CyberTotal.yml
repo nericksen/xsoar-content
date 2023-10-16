@@ -4,8 +4,7 @@ commonfields:
 name: CyberTotal
 display: CyberTotal
 category: Data Enrichment & Threat Intelligence
-description: CyberTotal is a cloud-based threat intelligence service developed by
-  CyCraft.
+description: CyberTotal is a cloud-based threat intelligence service developed by CyCraft.
 configuration:
 - display: CyberTotal URL
   name: url
@@ -51,6 +50,35 @@ configuration:
   defaultvalue: "false"
   type: 8
   required: false
+- additionalinfo: Reliability of the source providing the intelligence data.
+  defaultvalue: C - Fairly reliable
+  display: Source Reliability
+  name: integrationReliability
+  options:
+  - A+ - 3rd party enrichment
+  - A - Completely reliable
+  - B - Usually reliable
+  - C - Fairly reliable
+  - D - Not usually reliable
+  - E - Unreliable
+  - F - Reliability cannot be judged
+  type: 15
+  required: false
+- defaultvalue: indicatorType
+  name: feedExpirationPolicy
+  display: ''
+  options:
+  - never
+  - interval
+  - indicatorType
+  - suddenDeath
+  type: 17
+  required: false
+- defaultvalue: '20160'
+  name: feedExpirationInterval
+  display: ''
+  type: 1
+  required: false
 script:
   script: ''
   type: python
@@ -63,9 +91,7 @@ script:
       description: List of IPs.
       isArray: true
     - name: threshold
-      description: If the IP has reputation above the threshold then the IP defined
-        as malicious. If threshold not set, then threshold from instance configuration
-        is used.
+      description: If the IP has reputation above the threshold then the IP defined as malicious. If threshold not set, then threshold from instance configuration is used.
       defaultValue: "10"
     outputs:
     - contextPath: CyberTotal.IP.scan_date
@@ -87,8 +113,7 @@ script:
       description: Confidence of this IP. The range is from 0 to 10.
       type: number
     - contextPath: CyberTotal.IP.threat
-      description: Threat of this IP, which is a select from ‘High’, ‘Medium’ and
-        ‘Low’.
+      description: Threat of this IP, which is a select from ‘High’, ‘Medium’ and ‘Low’.
       type: string
     - contextPath: CyberTotal.IP.detection_engines
       description: The number of all antivirus vendors scanned.
@@ -109,8 +134,7 @@ script:
       description: The total number of engines that checked the indicator.
       type: Number
     - contextPath: IP.PositiveDetections
-      description: The number of engines that positively detected the indicator as
-        malicious.
+      description: The number of engines that positively detected the indicator as malicious.
       type: Number
     - contextPath: IP.Malicious.Vendor
       description: The vendor reporting the IP address as malicious.
@@ -139,9 +163,7 @@ script:
       description: list of hash(s).
       isArray: true
     - name: threshold
-      description: If the HASH has reputation above the threshold then the HASH defined
-        as malicious. If threshold not set, then threshold from instance configuration
-        is used.
+      description: If the HASH has reputation above the threshold then the HASH defined as malicious. If threshold not set, then threshold from instance configuration is used.
       defaultValue: "10"
     outputs:
     - contextPath: CyberTotal.File.scan_date
@@ -163,8 +185,7 @@ script:
       description: Confidence of this HASH. The range is from 0 to 10.
       type: number
     - contextPath: CyberTotal.File.threat
-      description: Threat of this HASH, which is a select from ‘High’, ‘Medium’ and
-        ‘Low’.
+      description: Threat of this HASH, which is a select from ‘High’, ‘Medium’ and ‘Low’.
       type: string
     - contextPath: CyberTotal.File.detection_engines
       description: The number of all antivirus vendors scanned.
@@ -235,9 +256,7 @@ script:
       description: List of domains.
       isArray: true
     - name: threshold
-      description: If the domain has reputation above the threshold then the domain
-        defined as malicious. If threshold not set, then threshold from instance configuration
-        is used.
+      description: If the domain has reputation above the threshold then the domain defined as malicious. If threshold not set, then threshold from instance configuration is used.
       defaultValue: "10"
     outputs:
     - contextPath: CyberTotal.Domain.scan_date
@@ -256,8 +275,7 @@ script:
       description: Confidence of this domain. The range is from 0 to 10.
       type: number
     - contextPath: CyberTotal.Domain.threat
-      description: Threat of this domain, which is a select from ‘High’, ‘Medium’
-        and ‘Low’.
+      description: Threat of this domain, which is a select from ‘High’, ‘Medium’ and ‘Low’.
       type: string
     - contextPath: CyberTotal.Domain.detection_engines
       description: The number of all antivirus vendors scanned.
@@ -278,8 +296,7 @@ script:
       description: The total number of engines that checked the indicator.
       type: Number
     - contextPath: Domain.PositiveDetections
-      description: The number of engines that positively detected the indicator as
-        malicious.
+      description: The number of engines that positively detected the indicator as malicious.
       type: Number
     - contextPath: Domain.Malicious.Vendor
       description: The vendor reporting the domain as malicious.
@@ -308,9 +325,7 @@ script:
       description: List of url(s).
       isArray: true
     - name: threshold
-      description: If the URL has reputation above the threshold then the URL defined
-        as malicious. If threshold not set, then threshold from instance configuration
-        is used.
+      description: If the URL has reputation above the threshold then the URL defined as malicious. If threshold not set, then threshold from instance configuration is used.
       defaultValue: "10"
     outputs:
     - contextPath: CyberTotal.URL.scan_date
@@ -332,8 +347,7 @@ script:
       description: Confidence of this URL. The range is from 0 to 10.
       type: number
     - contextPath: CyberTotal.URL.threat
-      description: Threat of this URL, which is a select from ‘High’, ‘Medium’ and
-        ‘Low’.
+      description: Threat of this URL, which is a select from ‘High’, ‘Medium’ and ‘Low’.
       type: string
     - contextPath: CyberTotal.URL.detection_engines
       description: The number of all antivirus vendors scanned.
@@ -354,8 +368,7 @@ script:
       description: The total number of engines that checked the indicator.
       type: String
     - contextPath: URL.PositiveDetections
-      description: The number of engines that positively detected the indicator as
-        malicious.
+      description: The number of engines that positively detected the indicator as malicious.
       type: String
     - contextPath: URL.Malicious.Vendor
       description: The vendor reporting the URL as malicious.
@@ -853,7 +866,7 @@ script:
       description: If this domain is expired
       type: boolean
     description: Return domain whois information
-  dockerimage: demisto/python3:3.9.8.24399
+  dockerimage: demisto/python3:3.10.12.63474
   runonce: false
   subtype: python3
 fromversion: 5.0.0

@@ -1,11 +1,13 @@
+import demistomock as demisto  # noqa: F401
+from CommonServerPython import *  # noqa: F401
+import struct
 import dateparser
-import demistomock as demisto
-from CommonServerPython import *
+import urllib3
 from CommonServerUserPython import *  # noqa
 from typing import Callable, Dict, List, Any, Union, Tuple
 
 # Disable insecure warnings
-requests.packages.urllib3.disable_warnings()  # pylint: disable=no-member
+urllib3.disable_warnings()
 
 ''' CONSTANTS '''
 INTEGRATION_NAME = 'Carbon Black EDR'
@@ -92,6 +94,23 @@ class regmod_complete(ProcessEventDetail):
     def format(self):
         for entry in self.fields:
             entry['operation_type'] = self.OPERATION_TYPE.get(entry.get('operation_type', ''), '')
+        return self.fields
+
+
+class netconn_complete(ProcessEventDetail):
+    """
+    For netconn_complete, the v2 API and newer return an array of JSON objects instead of piped-versioned fields.
+    https://developer.carbonblack.com/reference/enterprise-response/5.1/rest-api/#netconn_complete
+    """
+
+    def __init__(self, fields):
+        self.fields = fields
+
+    def format(self):
+        for entry in self.fields:
+            for ipfield in ("remote_ip", "local_ip"):
+                if isinstance(entry[ipfield], int):
+                    entry[ipfield] = socket.inet_ntoa(struct.pack('>i', entry[ipfield]))
         return self.fields
 
 
@@ -229,7 +248,8 @@ class Client(BaseClient):
 
     def get_formatted_ProcessEventDetail(self, process_json: dict):
         complex_fields = {'filemod_complete': filemod_complete, 'modload_complete': modload_complete,
-                          'regmod_complete': regmod_complete, 'crossproc_complete': crossproc_complete}
+                          'regmod_complete': regmod_complete, 'crossproc_complete': crossproc_complete,
+                          'netconn_complete': netconn_complete}
         formatted_json = {}
         for field in process_json:
             if field in complex_fields:
@@ -387,6 +407,15 @@ def watchlist_update_command(client: Client, id: str, search_query: str, descrip
     params = assign_params(enabled=enabled, search_query=search_query, description=description)
     res = client.http_request(url=f'/v1/watchlist/{id}', method='PUT', json_data=params)
 
+    # res contains whether the task successful.
+    return CommandResults(readable_output=res.get('result'))
+
+
+def watchlist_update_action_command(client: Client, id: str, action_type: str,
+                                    enabled: str) -> CommandResults:
+    enabled_bool = argToBoolean(enabled)
+    params = assign_params(enabled=enabled_bool)
+    res = client.http_request(url=f'/v1/watchlist/{id}/action_type/{action_type}', method='PUT', json_data=params)
     # res contains whether the task successful.
     return CommandResults(readable_output=res.get('result'))
 
@@ -749,7 +778,7 @@ def endpoint_command(client: Client, id: str = None, ip: str = None, hostname: s
             mac_address=_parse_field(sensor.get('network_adapters', ''), index_after_split=1, chars_to_remove='|'),
             os_version=sensor.get('os_environment_display_string'),
             memory=sensor.get('physical_memory_size'),
-            status='Online' if sensor.get('status') else 'Offline',
+            status='Online' if sensor.get('status') == 'Online' else 'Offline',
             is_isolated=is_isolated,
             vendor='Carbon Black Response')
         endpoints.append(endpoint)
@@ -803,7 +832,7 @@ def fetch_incidents(client: Client, max_results: int, last_run: dict, first_fetc
     if status:
         for current_status in argToList(status):
             demisto.debug(f'{INTEGRATION_NAME} - Fetching incident from Server with status: {current_status}')
-            query_params['status'] = current_status
+            query_params['status'] = f'"{current_status}"'
             # we create a new query containing params since we do not allow both query and params.
             res = client.get_alerts(query=_create_query_string(query_params), limit=max_results)
             alerts += res.get('results', [])
@@ -832,6 +861,15 @@ def fetch_incidents(client: Client, max_results: int, last_run: dict, first_fetc
         incident_name = f'{INTEGRATION_NAME}: {alert_id} {alert_name}'
         if not alert_id or not alert_name:
             demisto.debug(f'{INTEGRATION_NAME} - Alert details are missing. {str(alert)}')
+
+        if ioc_attr := alert.get('ioc_attr'):
+            try:
+                alert['ioc_attr'] = json.loads(ioc_attr)
+                highlights = alert['ioc_attr'].get('highlights', [])
+                for i, attribute in enumerate(highlights):
+                    highlights[i] = attribute.replace("PREPREPRE", "").replace("POSTPOSTPOST", "")
+            except json.JSONDecodeError as e:
+                demisto.debug(f"Failed to parse ioc_attr as JSON: {e}")
 
         incident = {
             'name': incident_name,
@@ -900,6 +938,7 @@ def main() -> None:
                                          'cb-edr-watchlists-list': get_watchlist_list_command,
                                          'cb-edr-watchlist-create': watchlist_create_command,
                                          'cb-edr-watchlist-update': watchlist_update_command,
+                                         'cb-edr-watchlist-update-action': watchlist_update_action_command,
                                          'cb-edr-watchlist-delete': watchlist_delete_command,
                                          'cb-edr-sensors-list': sensors_list_command,
                                          'cb-edr-quarantine-device': quarantine_device_command,
@@ -931,7 +970,6 @@ def main() -> None:
             raise NotImplementedError(f'command {command} was not implemented in this integration.')
     # Log exceptions and return errors
     except Exception as e:
-        demisto.error(traceback.format_exc())  # print the traceback
         return_error(f'Failed to execute {demisto.command()} command.\nError:\n{str(e)}')
 
 

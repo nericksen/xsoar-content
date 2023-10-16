@@ -1,3 +1,5 @@
+import demistomock as demisto  # noqa: F401
+from CommonServerPython import *  # noqa: F401
 """Base Script for Cortex XSOAR (aka Demisto)
 
 This is an empty script with some basic structure according
@@ -11,12 +13,9 @@ Linting: https://xsoar.pan.dev/docs/integrations/linting
 
 """
 
-import demistomock as demisto
-from CommonServerPython import *
 from CommonServerUserPython import *
 
 from typing import Dict, Any
-import traceback
 
 
 ''' STANDALONE FUNCTION '''
@@ -67,7 +66,7 @@ def main():
         # TODO: replace the invoked command function with yours
         return_results(basescript_dummy_command(demisto.args()))
     except Exception as ex:
-        demisto.error(traceback.format_exc())  # print the traceback
+
         return_error(f'Failed to execute BaseScript. Error: {str(ex)}')
 
 

@@ -1,8 +1,8 @@
+import demistomock as demisto  # noqa: F401
+from CommonServerPython import *  # noqa: F401
 from datetime import datetime
 
 import dateutil.parser
-import demistomock as demisto  # noqa: F401
-from CommonServerPython import *  # noqa: F401
 import pytz
 
 utc = pytz.UTC
@@ -28,7 +28,7 @@ def get_duration_html():
         diff = now - parsed_first_date
 
         return f"""
-                <table>
+                <table style="margin-left:auto;margin-right:auto;">
                 <tr>
                 <th style="font-size: 25px;">&#128345;</th>
                 <th style="font-size: 30px;">{diff.days}</th>
@@ -51,7 +51,6 @@ def get_duration_html():
     except FieldNotFound:
         return '<div style="text-align: center;">Duration is not available.</div>'
     except Exception as e:
-        demisto.error(traceback.format_exc())
         return_error(f"Error calculating duration\n{str(e)}")
 
 

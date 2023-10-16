@@ -1,8 +1,8 @@
+import demistomock as demisto  # noqa: F401
+from CommonServerPython import *  # noqa: F401
 """Main file for RubrikPolaris Integration."""
 from typing import Tuple
 
-import demistomock as demisto  # noqa: F401
-from CommonServerPython import *  # noqa: F401
 
 from rubrik_polaris.rubrik_polaris import PolarisClient
 from rubrik_polaris.exceptions import ProxyException
@@ -29,9 +29,9 @@ DEFAULT_SORT_BY = 'ID'
 DEFAULT_SORT_ORDER = 'ASC'
 DEFAULT_CLUSTER_CONNECTED = True
 DEFAULT_SNAPSHOT_GROUP_BY = "Day"
-
-DEFAULT_EVENT_SORT_BY = "LastUpdated"
-DEFAULT_EVENT_SORT_ORDER = "Desc"
+DEFAULT_MISSED_SNAPSHOT_GROUP_BY = "DAY"
+DEFAULT_EVENT_SORT_BY = "LAST_UPDATED"
+DEFAULT_EVENT_SORT_ORDER = "DESC"
 DEFAULT_SHOW_CLUSTER_SLA_ONLY = "True"
 DEFAULT_SORT_BY_SLA_DOMAIN = "NAME"
 DEFAULT_CLUSTER_SORT_BY = "ClusterName"
@@ -52,7 +52,7 @@ OBJECT_NAME = "Object Name"
 OBJECT_ID = "Object ID"
 DEFAULT_FIRST_FETCH = "3 days"
 MAX_MATCHES_PER_OBJECT = 100
-MAXIMUM_FILE_SIZE = 20000000000
+MAXIMUM_FILE_SIZE = 5000000
 
 MESSAGES = {
     'NO_RECORDS_FOUND': "No {} were found for the given argument(s).",
@@ -74,7 +74,6 @@ OUTPUT_PREFIX = {
     "GPS_VM_EXPORT": "RubrikPolaris.GPSVMSnapshotExport",
     "USER_DOWNLOADS": "RubrikPolaris.UserDownload",
     "GPS_SLA_DOMAIN": "RubrikPolaris.GPSSLADomain",
-    "PAGE_TOKEN_SLA_DOMAIN": "RubrikPolaris.PageToken.GPSSLADomain",
     "GPS_SNAPSHOT_CREATE": "RubrikPolaris.GPSOndemandSnapshot",
     "GPS_SNAPSHOT_FILE_DOWNLOAD": "RubrikPolaris.GPSSnapshotFileDownload",
     "GPS_VM_LIVEMOUNT": "RubrikPolaris.GPSVMLiveMount",
@@ -91,7 +90,6 @@ OUTPUT_PREFIX = {
     "RADAR_IOC_SCAN": "RubrikPolaris.RadarIOCScan",
     "GPS_ASYNC_RESULT": "RubrikPolaris.GPSAsyncResult",
     "GPS_CLUSTER": "RubrikPolaris.GPSCluster",
-    "PAGE_TOKEN_GPS_CLUSTER": "RubrikPolaris.PageToken.GPSCluster",
     "GPS_VM_RECOVER_FILES": "RubrikPolaris.GPSVMRecoverFiles"
 }
 
@@ -656,20 +654,19 @@ def prepare_context_hr_user_downloads(nodes: list):
     return nodes, hr_content
 
 
-def prepare_context_hr_sla_domains_list(edges):
+def prepare_context_hr_sla_domains_list(nodes):
     """
     Prepare context output and human readable response for rubrik-sonar-policies-list command.
 
-    :type edges: ``dict``
-    :param edges: edges from the response received from the API
+    :type nodes: ``dict``
+    :param nodes: nodes from the response received from the API
 
     :return: context output and human readable for the command
     """
-    edges = remove_empty_elements(edges)
+    nodes = remove_empty_elements(nodes)
     hr_content = []
     context = []
-    for edge in edges:
-        node = edge.get('node', {})
+    for node in nodes:
         context.append(node)
         base_frequency = node.get("baseFrequency", {})
         replication_specs = node.get("replicationSpecsV2", [])
@@ -1099,7 +1096,7 @@ def validate_ioc_scan_args(args: Dict[str, Any]) -> dict:
             for i in range(len(snapshot_id))]
 
     max_matches_per_snapshot = MAX_MATCHES_PER_OBJECT
-    max_file_size = MAXIMUM_FILE_SIZE
+    max_file_size = arg_to_number(args.get('max_file_size', MAXIMUM_FILE_SIZE), 'max_file_size')
     return {
         "object_ids": object_id,
         "cluster_id": cluster_id,
@@ -1163,19 +1160,18 @@ def prepare_context_hr_radar_ioc_scan_results(data: dict):
     return outputs, readable_output
 
 
-def prepare_context_hr_cluster_list(edges):
+def prepare_context_hr_cluster_list(nodes):
     """
     Prepare context output and human readable response for rubrik-gps-cluster-list command.
 
-    :type edges: ``list``
-    :param edges: edges from the response received from the API
+    :type nodes: ``list``
+    :param nodes: nodes from the response received from the API
 
     :return: context output and human readable for the command
     """
     hr_content = []
     context = []
-    for edge in edges:
-        node = edge.get('node')
+    for node in nodes:
         node = remove_empty_elements(node)
         context.append(node)
         ip_addresses = []
@@ -1283,9 +1279,9 @@ def fetch_incidents(client: PolarisClient, last_run: dict, params: dict) -> Tupl
         next_run["last_fetch"] = last_run_time
     # removed manual fetch interval as this feature is built in XSOAR 6.0.0 and onwards
 
-    events = client.list_event_series(activity_type="Anomaly",
+    events = client.list_event_series(activity_type="ANOMALY",
                                       start_date=last_run_time,
-                                      sort_order="Asc",
+                                      sort_order="ASC",
                                       first=max_fetch,
                                       after=next_page_token)
 
@@ -1447,7 +1443,7 @@ def sonar_sensitive_hits_command(client: PolarisClient, args: Dict[str, Any]) ->
 
     :return: CommandResult object
     """
-    incident = demisto.incident().get("CustomFields")
+    incident = demisto.incidents("CustomFields")
 
     # objectName is an optional value for the command. When not set,
     # look up the value in the incident custom fields
@@ -1518,8 +1514,8 @@ def rubrik_polaris_object_search_command(client: PolarisClient, args: Dict[str, 
         "has_next_page": page_cursor.get('hasNextPage', '')
     }
     if next_page_context.get('has_next_page'):
-        readable_output = "{}\n {} {}".format(tableToMarkdown(table_name, hr, header, removeNull=True),
-                                              MESSAGES['NEXT_RECORD'], page_cursor.get('endCursor'))
+        readable_output = f"""{tableToMarkdown(table_name, hr, header, removeNull=True)}\n {
+                               MESSAGES['NEXT_RECORD']} {page_cursor.get('endCursor')}"""
     else:
         readable_output = tableToMarkdown(table_name, hr, header, removeNull=True)
 
@@ -1548,7 +1544,7 @@ def rubrik_sonar_policies_list_command(client: PolarisClient, args: Dict[str, An
     :return: CommandResult object
     """
     raw_response = client.list_policies()
-    nodes = raw_response.get('data', {}).get('policyConnection', {}).get('nodes', [])
+    nodes = raw_response.get('data', {}).get('policies', {}).get('nodes', [])
     if not nodes:
         return CommandResults(readable_output=MESSAGES["NO_RECORDS_FOUND"].format("sonar policies"))
     context, hr = prepare_context_hr_sonar_policies(nodes)
@@ -1572,7 +1568,7 @@ def rubrik_sonar_policy_analyzer_groups_list_command(client: PolarisClient, args
     :return: CommandResult object
     """
     raw_response = client.list_policy_analyzer_groups()
-    nodes = raw_response.get('data', {}).get('analyzerGroupConnection', {}).get('nodes', [])
+    nodes = raw_response.get('data', {}).get('analyzerGroups', {}).get('nodes', [])
     if not nodes:
         return CommandResults(readable_output=MESSAGES["NO_RECORDS_FOUND"].format("sonar policy analyzer groups"))
     context, hr = prepare_context_hr_sonar_policy_analyzer_groups(nodes)
@@ -1720,8 +1716,8 @@ def rubrik_polaris_vm_objects_list_command(client: PolarisClient, args: Dict[str
         "has_next_page": page_cursor.get('hasNextPage', '')
     }
     if next_page_context.get('has_next_page'):
-        readable_output = "{}\n {} {}".format(tableToMarkdown(table_name, hr, header, removeNull=True),
-                                              MESSAGES['NEXT_RECORD'], page_cursor.get('endCursor'))
+        readable_output = f"""{tableToMarkdown(table_name, hr, header, removeNull=True)}\n {
+                               MESSAGES['NEXT_RECORD']} {page_cursor.get('endCursor')}"""
     else:
         readable_output = tableToMarkdown(table_name, hr, header, removeNull=True)
 
@@ -1766,7 +1762,7 @@ def rubrik_polaris_vm_object_snapshot_list_command(client: PolarisClient, args: 
         cluster_connected = validate_boolean_argument(cluster_connected, 'cluster_connected')
 
     snapshot_group_by = args.get('snapshot_group_by', DEFAULT_SNAPSHOT_GROUP_BY)
-    missed_snapshot_by = args.get('missed_snapshot_group_by', DEFAULT_SNAPSHOT_GROUP_BY)
+    missed_snapshot_by = args.get('missed_snapshot_group_by', DEFAULT_MISSED_SNAPSHOT_GROUP_BY)
     time_range = {
         "start": start_date,
         "end": end_date
@@ -1995,7 +1991,7 @@ def rubrik_gps_snapshot_files_list_command(client: PolarisClient, args: Dict[str
             next_page_context)
     }
     if page_cursor.get("hasNextPage"):
-        hr += "{} {}".format(MESSAGES['NEXT_RECORD'], page_cursor.get("endCursor"))
+        hr += f"{MESSAGES['NEXT_RECORD']} {page_cursor.get('endCursor')}"
 
     return CommandResults(readable_output=hr,
                           outputs=outputs,
@@ -2121,8 +2117,6 @@ def rubrik_gps_sla_domain_list(client: PolarisClient, args: Dict[str, Any]) -> C
     cluster_uuid = args.get("cluster_id", "")
     object_type = argToList(args.get("object_type"))
     show_cluster_slas_only = args.get("show_cluster_slas_only", DEFAULT_SHOW_CLUSTER_SLA_ONLY)
-    limit = arg_to_number(args.get('limit', DEFAULT_LIMIT))
-    next_page_token = args.get('next_page_token')
     sort_order = args.get('sort_order', DEFAULT_SORT_ORDER)
     sort_by = args.get('sort_by', DEFAULT_SORT_BY_SLA_DOMAIN)
     filters = []
@@ -2151,36 +2145,19 @@ def rubrik_gps_sla_domain_list(client: PolarisClient, args: Dict[str, Any]) -> C
             "text": str(show_cluster_slas_only).lower()
         })
 
-    if not limit or limit <= 0 or limit > 1000:
-        raise ValueError(ERROR_MESSAGES['INVALID_LIMIT'].format(limit))
+    nodes = list(client.list_sla_domains(filters=filters, sort_order=sort_order, sort_by=sort_by,
+                                         show_protected_object_count=True))
 
-    response = client.list_sla_domains(after=next_page_token, first=limit,
-                                       filters=filters, sort_order=sort_order,
-                                       sort_by=sort_by, show_protected_object_count=True)
-
-    edges = response.get('data', {}).get('globalSlaConnection', {}).get('edges', [])
-    if not edges:
+    if not nodes:
         return CommandResults(readable_output=MESSAGES["NO_RECORDS_FOUND"].format("sla domains"))
 
-    context, hr = prepare_context_hr_sla_domains_list(edges)
-
-    page_cursor = response.get('data', {}).get('globalSlaConnection', {}).get('pageInfo', {})
-    next_page_context = {
-        "next_page_token": page_cursor.get('endCursor', ''),
-        "name": "rubrik-gps-sla-domain-list",
-        "has_next_page": page_cursor.get('hasNextPage', '')
-    }
-    if next_page_context.get('has_next_page'):
-        hr += f"\n {MESSAGES['NEXT_RECORD']} {page_cursor.get('endCursor')}\n"
-
-    outputs = {
-        f"{OUTPUT_PREFIX['GPS_SLA_DOMAIN']}(val.id == obj.id)": context,
-        f"{OUTPUT_PREFIX['PAGE_TOKEN_SLA_DOMAIN']}(val.name == obj.name)": remove_empty_elements(next_page_context)
-    }
+    context, hr = prepare_context_hr_sla_domains_list(nodes)
 
     return CommandResults(
-        outputs=outputs,
-        raw_response=response,
+        outputs_prefix=OUTPUT_PREFIX["GPS_SLA_DOMAIN"],
+        outputs_key_field="id",
+        outputs=context,
+        raw_response=nodes,
         readable_output=hr
     )
 
@@ -2268,31 +2245,39 @@ def rubrik_gps_vm_livemount(client: PolarisClient, args: Dict[str, Any]) -> Comm
 
     :return: CommandResult object
     """
-    snapshot_id = validate_required_arg("snapshot_id", args.get("snapshot_id"))
-    host_id = args.get("host_id")
-    vm_name = args.get("vm_name")
+    snappable_id = validate_required_arg("snappable_id", args.get("snappable_id"))
+    should_recover_tags = args.get("should_recover_tags", True)
     power_on = args.get("power_on", True)
     keep_mac_addresses = args.get("keep_mac_addresses", False)
     remove_network_devices = args.get("remove_network_devices", False)
-    disable_network = args.get("disable_network")
-    recover_tags = args.get("recover_tags", True)
-    datastore_name = args.get("datastore_name")
+    host_id = args.get("host_id")
+    cluster_id = args.get("cluster_id")
+    resource_pool_id = args.get("resource_pool_id")
+    snapshot_fid = args.get("snapshot_fid")
+    vm_name = args.get("vm_name")
+    vnic_bindings = args.get("vnic_bindings")
+    recovery_point = args.get("recovery_point")
 
+    if vnic_bindings:
+        try:
+            vnic_bindings = json.loads(args.get("vnic_bindings"))  # type: ignore[arg-type]
+        except json.JSONDecodeError as exception:
+            raise Exception(f'Could not able to parse the provided JSON data. Error: {str(exception)}') from exception
     if power_on:
         power_on = validate_boolean_argument(power_on, "power_on")
     if keep_mac_addresses:
         keep_mac_addresses = validate_boolean_argument(keep_mac_addresses, "keep_mac_addresses")
     if remove_network_devices:
         remove_network_devices = validate_boolean_argument(remove_network_devices, "remove_network_devices")
-    if disable_network:
-        disable_network = validate_boolean_argument(disable_network, "disable_network")
-    if recover_tags:
-        recover_tags = validate_boolean_argument(recover_tags, "recover_tags")
+    if should_recover_tags:
+        should_recover_tags = validate_boolean_argument(should_recover_tags, "should_recover_tags")
 
-    raw_response = client.create_vm_livemount(snapshot_id, host_id, vm_name, disable_network, remove_network_devices,
-                                              power_on, keep_mac_addresses, datastore_name, recover_tags)
+    raw_response = client.create_vm_livemount_v2(snappable_id, should_recover_tags, power_on, keep_mac_addresses,
+                                                 remove_network_devices, host_id, cluster_id,
+                                                 resource_pool_id, snapshot_fid, vm_name, vnic_bindings,
+                                                 recovery_point)
 
-    outputs = raw_response.get("data", {}).get("vsphereVMInitiateLiveMount", {})
+    outputs = raw_response.get("data", {}).get("vsphereVmInitiateLiveMountV2", {})
     outputs = remove_empty_elements(outputs)
     if not outputs or not outputs.get("id"):
         return CommandResults(readable_output=MESSAGES['NO_RESPONSE'])
@@ -2511,7 +2496,7 @@ def rubrik_polaris_object_list_command(client: PolarisClient, args: Dict[str, An
 
     :return: CommandResult object
     """
-    type_filter = args.get("type_filter", "")
+    type_filter = validate_required_arg('type_filter', args.get("type_filter", ""))
     cluster_id = args.get("cluster_id", "")
     limit = arg_to_number(args.get('limit', DEFAULT_LIMIT))
     sort_by = args.get('sort_by', DEFAULT_SORT_BY)
@@ -2582,7 +2567,7 @@ def rubrik_polaris_object_snapshot_list_command(client: PolarisClient, args: Dic
         end_date = end_date_ob.strftime(DATE_TIME_FORMAT)
 
     limit = arg_to_number(args.get('limit', DEFAULT_LIMIT))
-    sort_order = args.get('sort_order', camelize_string(DEFAULT_SORT_ORDER))
+    sort_order = args.get('sort_order', DEFAULT_SORT_ORDER)
     next_page_token = args.get('next_page_token')
 
     if not limit or limit <= 0 or limit > 1000:
@@ -2740,44 +2725,25 @@ def rubrik_gps_cluster_list_command(client: PolarisClient, args: Dict[str, Any])
     """
     name = args.get("name", "")
     cluster_type = args.get("type", "")
-    limit = arg_to_number(args.get('limit', DEFAULT_LIMIT))
     sort_by = args.get('sort_by', DEFAULT_CLUSTER_SORT_BY)
-    sort_order = args.get('sort_order', camelize_string(DEFAULT_SORT_ORDER))
-    next_page_token = args.get('next_page_token')
+    sort_order = args.get('sort_order', DEFAULT_SORT_ORDER)
     filters = {}
     if cluster_type:
         filters["type"] = argToList(cluster_type)
     if name:
         filters["name"] = argToList(name)
-    if not limit or limit <= 0 or limit > 1000:
-        raise ValueError(ERROR_MESSAGES['INVALID_LIMIT'].format(limit))
 
-    response = client.list_clusters(first=limit, sort_order=sort_order,
-                                    sort_by=sort_by, after=next_page_token, filters=filters)
-    data = response.get('data', {}).get('clusterConnection', {})
-    edges = data.get('edges', [])
-    if not edges:
+    nodes = list(client.list_clusters(sort_order=sort_order, sort_by=sort_by, filters=filters))
+    if not nodes:
         return CommandResults(readable_output=MESSAGES["NO_RECORDS_FOUND"].format("clusters"))
 
-    context, hr = prepare_context_hr_cluster_list(edges)
-
-    page_cursor = data.get('pageInfo', {})
-    next_page_context = {
-        "next_page_token": page_cursor.get('endCursor', ''),
-        "name": "rubrik-gps-cluster-list",
-        "has_next_page": page_cursor.get('hasNextPage', '')
-    }
-    if next_page_context.get('has_next_page'):
-        hr += f"\n {MESSAGES['NEXT_RECORD']} {page_cursor.get('endCursor')}\n"
-
-    outputs = {
-        f"{OUTPUT_PREFIX['GPS_CLUSTER']}(val.id == obj.id)": context,
-        f"{OUTPUT_PREFIX['PAGE_TOKEN_GPS_CLUSTER']}(val.name == obj.name)": remove_empty_elements(next_page_context)
-    }
+    context, hr = prepare_context_hr_cluster_list(nodes)
 
     return CommandResults(
-        outputs=outputs,
-        raw_response=response,
+        outputs_prefix=OUTPUT_PREFIX['GPS_CLUSTER'],
+        outputs_key_field="id",
+        outputs=context,
+        raw_response=nodes,
         readable_output=hr
     )
 

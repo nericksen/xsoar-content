@@ -2,8 +2,6 @@ from typing import Dict
 
 from CommonServerPython import *  # noqa: E402 lgtm [py/polluting-import]
 
-# Disable insecure warnings
-requests.packages.urllib3.disable_warnings()
 
 # CONSTANTS
 DATE_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
@@ -62,7 +60,8 @@ class pXScoring:
             integration_name='PerimeterX',
             score=pXScoring.dbotscore_from_risk(risk_score, thresholds),
             malicious_description='High risk score indicates high probability that the requests from the IP are '
-                                  'malicious '
+                                  'malicious ',
+            reliability=demisto.params().get('integrationReliability')
         )
 
         # Create the IP Standard Context structure using Common.IP and add

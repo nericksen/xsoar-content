@@ -1,7 +1,7 @@
+import demistomock as demisto  # noqa: F401
+from CommonServerPython import *  # noqa: F401
 from enum import Enum
 import urllib3
-from CommonServerPython import *
-import demistomock as demisto
 from pydantic import BaseConfig, BaseModel, AnyUrl, Json, Field  # pylint: disable=no-name-in-module
 import requests
 from requests.auth import HTTPBasicAuth
@@ -11,6 +11,8 @@ from datetime import datetime, timedelta
 urllib3.disable_warnings()
 
 DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%f"
+VENDOR = "atlassian"
+PRODUCT = "jira"
 
 
 class Method(str, Enum):
@@ -53,7 +55,7 @@ class Request(BaseModel):
     params: ReqParams
     insecure: bool = Field(not demisto.params().get('insecure', False), alias='verify')
     proxy: bool = Field(demisto.params().get('proxy', False), alias='proxies')
-    data: Optional[str]
+    data: Optional[str] = None
     auth: Optional[HTTPBasicAuth] = Field(
         HTTPBasicAuth(
             demisto.params().get('credentials', {}).get('identifier'),
@@ -175,9 +177,9 @@ def main():
     demisto_params = demisto.params() | demisto.args() | demisto.getLastRun()
 
     demisto_params['url'] = f'{str(demisto_params.get("url", "")).removesuffix("/")}/rest/api/3/auditing/record'
-    demisto_params['params'] = ReqParams.parse_obj(demisto_params)
+    demisto_params['params'] = ReqParams.model_validate(demisto_params)  # type: ignore[attr-defined]
 
-    request = Request.parse_obj(demisto_params)
+    request = Request.model_validate(demisto_params)  # type: ignore[attr-defined]
     client = Client(request)
     get_events = GetEvents(client)
     command = demisto.command()
@@ -188,7 +190,7 @@ def main():
 
     elif command in ('fetch-events', 'jira-get-events'):
         events = get_events.run(int(demisto_params.get('max_fetch', 1000)))
-        send_events_to_xsiam(events, 'atlassian', 'jira')
+        send_events_to_xsiam(events, vendor=VENDOR, product=PRODUCT)
 
         if events:
             demisto.setLastRun(get_events.set_next_run(events[0]))

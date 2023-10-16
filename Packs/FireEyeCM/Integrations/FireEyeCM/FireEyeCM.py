@@ -2,8 +2,9 @@ from typing import Tuple
 
 from CommonServerPython import *
 
+import urllib3
 # Disable insecure warnings
-requests.packages.urllib3.disable_warnings()
+urllib3.disable_warnings()
 
 ''' CONSTANTS '''
 INTEGRATION_NAME = 'FireEye Central Management'
@@ -16,6 +17,7 @@ class Client:
     """
     The integration's client
     """
+
     def __init__(self, base_url: str, username: str, password: str, verify: bool, proxy: bool):
         self.fe_client: FireEyeClient = FireEyeClient(base_url=base_url, username=username, password=password,
                                                       verify=verify, proxy=proxy)

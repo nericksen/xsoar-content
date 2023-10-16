@@ -144,8 +144,7 @@ tasks:
     scriptarguments:
       allow_not_found_exchange_locations:
         complex:
-          root: |
-            inputs.O365AllowNotFoundExchangeLocations
+          root: inputs.O365AllowNotFoundExchangeLocations
       delete_type:
         complex:
           root: inputs.O365DeleteType
@@ -172,7 +171,7 @@ tasks:
       {
         "position": {
           "x": -380,
-          "y": 1320
+          "y": 1325
         }
       }
     note: false
@@ -227,6 +226,7 @@ tasks:
                     right:
                       value:
                         simple: EWS v2
+                    ignorecase: true
                 - - operator: isEqualString
                     left:
                       value:
@@ -235,7 +235,10 @@ tasks:
                     right:
                       value:
                         simple: active
+                    ignorecase: true
             iscontext: true
+          right:
+            value: {}
       - - operator: isNotEmpty
           left:
             value:
@@ -250,6 +253,16 @@ tasks:
                     right:
                       value:
                         simple: SecurityAndCompliance
+                    ignorecase: true
+                  - operator: isEqualString
+                    left:
+                      value:
+                        simple: modules.brand
+                      iscontext: true
+                    right:
+                      value:
+                        simple: SecurityAndComplianceV2
+                    ignorecase: true
                 - - operator: isEqualString
                     left:
                       value:
@@ -258,6 +271,7 @@ tasks:
                     right:
                       value:
                         simple: active
+                    ignorecase: true
             iscontext: true
       - - operator: isEqualString
           left:
@@ -268,6 +282,7 @@ tasks:
           right:
             value:
               simple: O365
+          ignorecase: true
     - label: Only O365 Enabled
       condition:
       - - operator: isNotEmpty
@@ -284,6 +299,16 @@ tasks:
                     right:
                       value:
                         simple: SecurityAndCompliance
+                    ignorecase: true
+                  - operator: isEqualString
+                    left:
+                      value:
+                        simple: modules.brand
+                      iscontext: true
+                    right:
+                      value:
+                        simple: SecurityAndComplianceV2
+                    ignorecase: true
                 - - operator: isEqualString
                     left:
                       value:
@@ -292,6 +317,7 @@ tasks:
                     right:
                       value:
                         simple: active
+                    ignorecase: true
             iscontext: true
       - - operator: isEmpty
           left:
@@ -307,6 +333,7 @@ tasks:
                     right:
                       value:
                         simple: EWS v2
+                    ignorecase: true
                 - - operator: isEqualString
                     left:
                       value:
@@ -315,6 +342,7 @@ tasks:
                     right:
                       value:
                         simple: active
+                    ignorecase: true
             iscontext: true
       - - operator: isEqualString
           left:
@@ -325,6 +353,7 @@ tasks:
           right:
             value:
               simple: O365
+          ignorecase: true
     - label: Both Enabled, input is EWS
       condition:
       - - operator: isNotEmpty
@@ -341,6 +370,7 @@ tasks:
                     right:
                       value:
                         simple: EWS v2
+                    ignorecase: true
                 - - operator: isEqualString
                     left:
                       value:
@@ -349,6 +379,7 @@ tasks:
                     right:
                       value:
                         simple: active
+                    ignorecase: true
             iscontext: true
       - - operator: isNotEmpty
           left:
@@ -364,6 +395,16 @@ tasks:
                     right:
                       value:
                         simple: SecurityAndCompliance
+                    ignorecase: true
+                  - operator: isEqualString
+                    left:
+                      value:
+                        simple: modules.brand
+                      iscontext: true
+                    right:
+                      value:
+                        simple: SecurityAndComplianceV2
+                    ignorecase: true
                 - - operator: isEqualString
                     left:
                       value:
@@ -382,6 +423,7 @@ tasks:
           right:
             value:
               simple: EWS
+          ignorecase: true
     - label: Only EWS enabled
       condition:
       - - operator: isNotEmpty
@@ -398,6 +440,7 @@ tasks:
                     right:
                       value:
                         simple: EWS v2
+                    ignorecase: true
                 - - operator: isEqualString
                     left:
                       value:
@@ -406,6 +449,7 @@ tasks:
                     right:
                       value:
                         simple: active
+                    ignorecase: true
             iscontext: true
       - - operator: isEmpty
           left:
@@ -421,6 +465,16 @@ tasks:
                     right:
                       value:
                         simple: SecurityAndCompliance
+                    ignorecase: true
+                  - operator: isEqualString
+                    left:
+                      value:
+                        simple: modules.brand
+                      iscontext: true
+                    right:
+                      value:
+                        simple: SecurityAndComplianceV2
+                    ignorecase: true
                 - - operator: isEqualString
                     left:
                       value:
@@ -429,6 +483,7 @@ tasks:
                     right:
                       value:
                         simple: active
+                    ignorecase: true
             iscontext: true
       - - operator: isEqualString
           left:
@@ -438,10 +493,11 @@ tasks:
             iscontext: true
           right:
             value:
-              simple: EWS v2
+              simple: EWS
+          ignorecase: true
     - label: Gmail
       condition:
-      - - operator: isExists
+      - - operator: isNotEmpty
           left:
             value:
               complex:
@@ -478,7 +534,7 @@ tasks:
           ignorecase: true
     - label: Agari Phishing Defense
       condition:
-      - - operator: isExists
+      - - operator: isNotEmpty
           left:
             value:
               complex:
@@ -512,6 +568,8 @@ tasks:
           right:
             value:
               simple: Agari Phishing Defense
+          ignorecase: true
+    continueonerrortype: ""
     view: |-
       {
         "position": {
@@ -1032,13 +1090,7 @@ inputs:
   required: false
   description: Used only in O365. Text search string or a query that is formatted using the Keyword Query Language (KQL).
   playbookInputQuery:
-- key: O365Description
-  value: {}
-  required: false
-  description: Used only in O365. Description of the compliance search.
-  playbookInputQuery:
-- key: |
-    O365AllowNotFoundExchangeLocations
+- key: O365AllowNotFoundExchangeLocations
   value:
     simple: "False"
   required: false
@@ -1054,14 +1106,6 @@ inputs:
   required: false
   description: 'Used only when searching and deleting emails in O365. The exchange location. Determines where to search and delete emails searched using O365 playbooks. Use the value ''All'' to search all mailboxes, use ''SingleMailbox'' to search and delete the email only from the recipient''s inbox, or use ''Manual'' to decide manually for every incident. Note: Searching all mailboxes may take a significant amount of time.'
   playbookInputQuery:
-- key: To
-  value:
-    complex:
-      root: incident
-      accessor: emailto
-  required: false
-  description: The email address to which the email was sent. This is used in 0365 to search for and delete emails only from the recipient's inbox.
-  playbookInputQuery:
 - key: SearchThisWeek
   value:
     simple: "true"
@@ -1072,3 +1116,6 @@ outputs: []
 tests:
 - No tests (auto formatted)
 fromversion: 6.1.0
+marketplaces:
+  - xsoar
+  - marketplacev2

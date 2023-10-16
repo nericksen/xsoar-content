@@ -1,7 +1,7 @@
 import pytest
-import io
 from CommonServerPython import *
 from CommonServerPython import DemistoException, Common
+from requests.models import Response
 
 TAG_IDS_LISTS = [([1, 2, 3], [2, 3, 4, 5], [1, 2, 3], [4, 5]),
                  ([1, 2, 3], [4, 5], [1, 2, 3], [4, 5])]
@@ -47,7 +47,7 @@ TEST_EVENTS_INCLUDE_DETECTED_TAG = [("2", ['149', '145', '144']),  # 3 events in
 
 
 def util_load_json(path):
-    with io.open(path, mode="r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         return json.loads(f.read())
 
 
@@ -295,7 +295,7 @@ def test_is_tag_list_invalid(mocker):
     with pytest.raises(DemistoException) as e:
         is_tag_list_valid(["abc", 100, "200", -1, '0'])
         if not e:
-            assert False
+            raise AssertionError
 
 
 @pytest.mark.parametrize('malicious_tag_ids, suspicious_tag_ids, return_malicious_tag_ids, return_suspicious_tag_ids',
@@ -617,7 +617,276 @@ def test_warninglist_response(mocker):
     from MISPV3 import warninglist_command
     demisto_args = {"value": "8.8.8.8"}
     warninglist_response = util_load_json("test_data/warninglist_response.json")
-    with io.open("test_data/warninglist_outputs.md", mode="r", encoding="utf-8") as f:
+    with open("test_data/warninglist_outputs.md", encoding="utf-8") as f:
         warninglist_expected_output = f.read()
     mocker.patch("pymisp.ExpandedPyMISP.values_in_warninglist", return_value=warninglist_response)
     assert warninglist_command(demisto_args).to_context()['HumanReadable'] == warninglist_expected_output
+
+
+def get_response(status_code, mocker, mock_response_key):
+    the_response = Response()
+    the_response.status_code = status_code
+    the_response.request = mocker.patch.object(
+        demisto,
+        'internalHttpRequest',
+        return_value={
+            'body': json.dumps({'key': 'value'}),
+            'headers': json.dumps({'key': 'value'})
+        }
+    )
+    file = util_load_json("test_data/response_mock_add_email_object_test.json")[mock_response_key]
+
+    def json_func():
+        return file
+    the_response.json = json_func
+    return the_response
+
+
+@pytest.mark.parametrize('file_path, expected_output_key, mock_response_key', [
+    ("test_data/test_add_email_object_case_1.eml", "expected_output_case_1", "response_mock_case_1"),
+    ("test_data/test_add_email_object_case_2.eml", "expected_output_case_2", "response_mock_case_2"),
+    ("test_data/test_add_email_object_case_3.eml", "expected_output_case_3", "response_mock_case_3")])
+def test_add_email_object(file_path, expected_output_key, mock_response_key, mocker):
+    """
+    Given:
+    - file path to a .eml file.
+    - case 1: regular gmail format mail.
+    - case 2: mail from TPB.
+    - case 3: mail with attachments.
+    When:
+    - Running add_email_object command.
+    Then:
+    - Ensure that the extraction of the information occured correctly and in the right format.
+    - case 1: should return true.
+    - case 2: should return true.
+    - case 3: should return true.
+    """
+    from MISPV3 import add_email_object
+    import pymisp
+    event_id = 1231
+    demisto_args: dict = {'entry_id': "", 'event_id': event_id}
+    mocker.patch.object(demisto, "getFilePath", return_value={
+                        "path": file_path
+                        })
+    mocker.patch.object(pymisp.api.PyMISP, "_prepare_request", return_value=get_response(200, mocker, mock_response_key))
+    pymisp.ExpandedPyMISP.global_pythonify = False
+    output = add_email_object(demisto_args).outputs
+    expected_output = util_load_json("test_data/response_mock_add_email_object_test.json")[expected_output_key]
+    assert output == expected_output
+
+
+def test_fail_to_add_email_object(mocker):
+    """
+    Given:
+    - case 1: 404 status code.
+    When:
+    - Running add_email_object command.
+    Then:
+    - Ensure that the error code was parsed into the response, was caught and handeled as a DemistoException.
+    - case 1: Should catch a DemistoException and return true.
+    """
+    from MISPV3 import add_email_object
+    import pymisp
+    event_id = 1231
+    demisto_args: dict = {'entry_id': "", 'event_id': event_id}
+    mocker.patch.object(demisto, "getFilePath", return_value={
+                        "path": "test_data/test_add_email_object_case_1.eml"
+                        })
+    mocker.patch.object(pymisp.api.PyMISP, "_prepare_request", return_value=get_response(404, mocker, "response_mock_case_1"))
+    pymisp.ExpandedPyMISP.global_pythonify = True
+    with pytest.raises(DemistoException) as exception_info:
+        add_email_object(demisto_args)
+    assert "'errors': (404" in str(exception_info.value)
+
+
+def test_add_msg_email_object(mocker):
+    """
+    Given:
+    - an msg email file.
+    When:
+    - Running add_email_object command.
+    Then:
+    - Ensure Demisto exception is raised with the correct error.
+    """
+    from MISPV3 import add_email_object
+    event_id = 1231
+    demisto_args: dict = {'entry_id': "", 'event_id': event_id}
+    mocker.patch.object(demisto, "getFilePath", return_value={
+                        "name": "test_add_email_object_case_1.msg",
+                        "path": "test_data/test_add_email_object_case_1.msg"
+                        })
+    with pytest.raises(DemistoException) as exception_info:
+        add_email_object(demisto_args)
+    assert 'misp-add-email-object command does not support *.msg files' in str(exception_info.value)
+
+
+@pytest.mark.parametrize(
+    'demisto_args, is_attribute, expected_result',
+    [
+        (
+            {'uuid': 'test_uuid', 'tag': 'test_tag', 'disable_output': True},
+            True,
+            {
+                'readable_output': 'Tag test_tag has been successfully added to attribute test_uuid',
+                'outputs': None,
+                'outputs_prefix': None,
+            }
+        ),
+        (
+            {'uuid': 'test_uuid', 'tag': 'test_tag', 'disable_output': False},
+            True,
+            {
+                'readable_output': 'Tag test_tag has been successfully added to attribute test_uuid',
+                'outputs': {'test': 'test'},
+                'outputs_prefix': 'MISP.Attribute',
+            }
+        ),
+        (
+            {'uuid': 'test_uuid', 'tag': 'test_tag', 'disable_output': False},
+            False,
+            {
+                'readable_output': 'Tag test_tag has been successfully added to event test_uuid',
+                'outputs': {'test': 'test'},
+                'outputs_prefix': 'MISP.Event',
+            }
+        )
+    ]
+)
+def test_add_tag(demisto_args: dict, is_attribute: bool, expected_result: dict, mocker):
+    """
+    Given:
+    - Various arguments that the add_tag function accepts.
+
+    When:
+    - The `disable_output` and `is_attribute` arguments changes each run.
+
+    Then:
+    - Ensure that the returned `CommandResults` are modified by the given arguments.
+    """
+    mock_misp(mocker)
+    from MISPV3 import add_tag
+    from pymisp import ExpandedPyMISP
+    mocker.patch.object(ExpandedPyMISP, 'tag', return_value={})
+    mocked_search = mocker.patch.object(ExpandedPyMISP, 'search', return_value={})
+    mocker.patch('MISPV3.build_attributes_search_response', return_value={'test': 'test'})
+    mocker.patch('MISPV3.build_events_search_response', return_value={'test': 'test'})
+    result = add_tag(demisto_args, is_attribute=is_attribute)
+
+    assert bool(mocked_search.call_count) == ((is_attribute and not demisto_args['disable_output']) or not is_attribute)
+    assert result.readable_output == expected_result['readable_output']
+    assert result.outputs == expected_result['outputs']
+    assert result.outputs_prefix == expected_result['outputs_prefix']
+
+
+def test_add_user_to_misp(mocker):
+    """
+    Given:
+    - A mocker object for patching the 'add_user' function.
+    - A mock response representing the user details.
+
+    When:
+    - Calling the `add_user_to_misp` function with a set of arguments.
+
+    Then:
+    - Ensure that the function successfully adds a new user to MISP and returns the expected output.
+    """
+    from MISPV3 import add_user_to_misp
+    mock_response = {
+        'User':
+        {
+            'id': '1',
+            'password': '*****',
+            'org_id': '1',
+            'server_id': '1',
+            'email': 'test@example.com',
+            'autoalert': False,
+            'authkey': 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+            'invited_by': '1',
+            'gpgkey': '',
+            'certif_public': '',
+            'nids_sid': '1111111',
+            'termsaccepted': False,
+            'newsread': '1',
+            'role_id': '1',
+            'change_pw': True,
+            'contactalert': False,
+            'disabled': False,
+            'expiration': None,
+            'current_login': '0',
+            'last_login': '0',
+            'force_logout': False,
+            'date_created': '1111111111',
+            'date_modified': '1111111111'
+        }
+    }
+    mocker.patch('MISPV3.PYMISP.add_user', return_value=mock_response)
+    demisto_args = {
+        'email': 'test@example.com',
+        'org_id': '123',
+        'role_id': '456',
+        'password': 'password123'
+    }
+    result = add_user_to_misp(demisto_args)
+    expected_output = {
+        'readable_output': '## MISP add user\nNew user was added to MISP.\nEmail:test@example.com',
+        'raw_response': mock_response.get('User', {}),
+        'outputs': mock_response.get('User', {})
+    }
+    assert result.readable_output == expected_output['readable_output']
+    assert result.raw_response == expected_output['raw_response']
+    assert result.outputs == expected_output['outputs']
+
+
+def test_get_organizations_info(mocker):
+    """
+    Given:
+    - A mocker object for patching the `organisations` function.
+
+    When:
+    - Calling the `get_organizations_info` function.
+
+    Then:
+    - Ensure that the function successfully retrieves the organizations information and returns the expected output.
+    """
+    from MISPV3 import get_organizations_info
+
+    mock_organizations = [
+        {'Organisation': {'id': 1, 'name': 'Org1'}},
+        {'Organisation': {'id': 2, 'name': 'Org2'}}
+    ]
+    mocker.patch('MISPV3.PYMISP.organisations', return_value=mock_organizations)
+    result = get_organizations_info()
+    expected_output = {
+        'MISP.Organization': [
+            {'id': 1, 'name': 'Org1'},
+            {'id': 2, 'name': 'Org2'}
+        ]
+    }
+    assert result.outputs == expected_output['MISP.Organization']
+
+
+def test_get_role_info(mocker):
+    """
+    Given:
+    - A mocker object for patching the `roles` function.
+
+    When:
+    - Calling the `get_role_info` function.
+
+    Then:
+    - Ensure that the function successfully retrieves the role information and returns the expected output.
+    """
+    from MISPV3 import get_role_info
+    mock_roles = [
+        {'Role': {'id': 1, 'name': 'Role1'}},
+        {'Role': {'id': 2, 'name': 'Role2'}}
+    ]
+    mocker.patch('MISPV3.PYMISP.roles', return_value=mock_roles)
+    result = get_role_info()
+    expected_output = {
+        'MISP.Role': [
+            {'id': 1, 'name': 'Role1'},
+            {'id': 2, 'name': 'Role2'}
+        ]
+    }
+    assert result.outputs == expected_output['MISP.Role']

@@ -1,9 +1,11 @@
 import demistomock as demisto
 from CommonServerPython import *
+import urllib3
 import ast
+from MicrosoftApiModule import *  # noqa: E402
 
 # disable insecure warnings
-requests.packages.urllib3.disable_warnings()
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 """ GLOBAL VARS """
 
@@ -40,7 +42,7 @@ SECURE_STORES_API_VERSION = "2020-01-01"
 
 # Format ports in JIT access policy rule to (portNum, protocol, allowedAddress, maxDuration)
 def format_jit_port_rule(ports):
-    port_array = list()
+    port_array = []
     for port in ports:
         # for each item in unicode, has to use str to decode to ascii
         p_num = str(port.get("number"))
@@ -57,7 +59,7 @@ def format_jit_port_rule(ports):
 
 # Format ports in JIT access request to (portNum, allowedAddress, endTime, status)
 def format_jit_port_request(ports):
-    port_array = list()
+    port_array = []
     for port in ports:
         # for each item in unicode, has to use str to decode to ascii
         p_num = str(port.get("number"))
@@ -90,13 +92,18 @@ class MsClient:
     """
 
     def __init__(self, tenant_id, auth_id, enc_key, app_name, server, verify, proxy, self_deployed, subscription_id,
-                 ok_codes, certificate_thumbprint, private_key):
+                 ok_codes, certificate_thumbprint, private_key,
+                 managed_identities_client_id=None):
         base_url_with_subscription = f"{server}subscriptions/{subscription_id}/"
         self.ms_client = MicrosoftClient(
             tenant_id=tenant_id, auth_id=auth_id, enc_key=enc_key, app_name=app_name,
             base_url=base_url_with_subscription, verify=verify, proxy=proxy, self_deployed=self_deployed,
             ok_codes=ok_codes, scope="https://management.azure.com/.default",
-            certificate_thumbprint=certificate_thumbprint, private_key=private_key)
+            certificate_thumbprint=certificate_thumbprint, private_key=private_key,
+            managed_identities_client_id=managed_identities_client_id,
+            managed_identities_resource_uri=Resources.management_azure,
+            command_prefix="azure-sc"
+        )
         self.server = server
         self.subscription_id = subscription_id
 
@@ -422,7 +429,7 @@ def get_alert_command(client: MsClient, args: dict):
     asc_location = args.get("asc_location")
     alert_id = args.get("alert_id")
     alert = client.get_alert(resource_group_name, asc_location, alert_id)
-    final_output = list()
+    final_output = []
 
     # Basic Property Table
     properties = alert.get("properties")
@@ -491,7 +498,7 @@ def get_alert_command(client: MsClient, args: dict):
                 and alert.get("properties")
                 and alert.get("properties").get("extendedProperties")
         ):
-            extended_properties = dict()
+            extended_properties = {}
             properties = alert.get("properties")
             if isinstance(properties.get("extendedProperties"), dict):
                 for key, value in alert["properties"]["extendedProperties"].items():
@@ -511,31 +518,30 @@ def get_alert_command(client: MsClient, args: dict):
 
             # Entities Table
             entities = properties.get("entities")
-            if entities:
-                if isinstance(entities, dict):
-                    entities_table_output = list()
-                    for entity in entities:
-                        entities_table_output.append(
-                            {
-                                "Content": ast.literal_eval(str(entity)),
-                                "Type": entity["type"],
-                            }
-                        )
-
-                    md = tableToMarkdown(
-                        "Azure Security Center - Get Alert - Entity",
-                        entities_table_output,
-                        removeNull=True,
+            if entities and isinstance(entities, dict):
+                entities_table_output = []
+                for entity in entities:
+                    entities_table_output.append(
+                        {
+                            "Content": ast.literal_eval(str(entity)),
+                            "Type": entity["type"],
+                        }
                     )
 
-                    entities_table_entry = {
-                        "Type": entryTypes["note"],
-                        "Contents": alert.get("properties").get("entities"),
-                        "ContentsFormat": formats["json"],
-                        "ReadableContentsFormat": formats["markdown"],
-                        "HumanReadable": md,
-                    }
-                    final_output.append(entities_table_entry)
+                md = tableToMarkdown(
+                    "Azure Security Center - Get Alert - Entity",
+                    entities_table_output,
+                    removeNull=True,
+                )
+
+                entities_table_entry = {
+                    "Type": entryTypes["note"],
+                    "Contents": alert.get("properties").get("entities"),
+                    "ContentsFormat": formats["json"],
+                    "ReadableContentsFormat": formats["markdown"],
+                    "HumanReadable": md,
+                }
+                final_output.append(entities_table_entry)
     demisto.results(final_output)
 
 
@@ -555,7 +561,7 @@ def list_alerts_command(client: MsClient, args: dict):
     alerts = client.list_alerts(
         resource_group_name, asc_location, filter_query, select_query, expand_query
     ).get("value")
-    outputs = list()
+    outputs = []
     for alert in alerts:
         properties = alert.get("properties")
         if properties:
@@ -620,7 +626,7 @@ def list_locations_command(client: MsClient):
     """Getting all locations
     """
     locations = client.list_locations().get("value")
-    outputs = list()
+    outputs = []
     if locations:
         for location in locations:
             if location.get("properties") and location.get("properties").get(
@@ -644,6 +650,7 @@ def list_locations_command(client: MsClient):
             )
             ec = {"AzureSecurityCenter.Location(val.ID && val.ID === obj.ID)": outputs}
             return md, ec, locations
+        return None
     else:
         return "No locations found", None, None
 
@@ -823,7 +830,7 @@ def list_ipp_command(client: MsClient, args: dict):
     """
     management_group = args.get("management_group")
     policies = client.list_ipp(management_group).get("value")
-    outputs = list()
+    outputs = []
     if policies:
         for policy in policies:
             if policy.get("properties") and policy.get("properties").get("labels"):
@@ -919,7 +926,7 @@ def get_ipp_command(client: MsClient, args: dict):
         }
 
         # Information Type table
-        info_type_table_output = list()
+        info_type_table_output = []
         for information_type_data in properties.get("informationTypes").values():
             keywords = ", ".join(
                 [(str(keyword.get("displayName")) + str(keyword.get("custom")) + str(keyword.get("canBeNumeric")))
@@ -948,7 +955,7 @@ def get_ipp_command(client: MsClient, args: dict):
         }
         demisto.results([basic_table_entry, info_type_table_entry])
     else:
-        demisto.results("No properties found in {}".format(management_group))
+        demisto.results(f"No properties found in {management_group}")
 
 
 """ Information Protection Policies End """
@@ -974,10 +981,7 @@ def list_jit_command(client: MsClient, args: dict):
             rules_summary_array = []
             for rule in rules_data:
                 ID = rule.get("id")
-                if isinstance(ID, str):
-                    vm_name = ID.split("/")[-1]
-                else:
-                    vm_name = None  # type: ignore
+                vm_name = ID.split("/")[-1] if isinstance(ID, str) else None
                 vm_ports = [str(port.get("number")) for port in rule.get("ports")]
                 rules_summary_array.append(
                     "({}: {})".format(vm_name, ", ".join(vm_ports))
@@ -1053,7 +1057,7 @@ def get_jit_command(client: MsClient, args: dict):
     }
 
     # Rules table
-    rules_table_output = list()
+    rules_table_output = []
     properties = policy.get("properties")
     virtual_machines = properties.get("virtualMachines")
     if isinstance(properties, dict) and virtual_machines:
@@ -1079,14 +1083,14 @@ def get_jit_command(client: MsClient, args: dict):
         }
 
         # Requests table
-        requests_table_output = list()
+        requests_table_output = []
 
         for requestData in properties.get("requests", []):
-            vms = list()
+            vms = []
             for vm in requestData.get("virtualMachines"):
                 vm_name = vm["id"].split("/")[-1]
                 vm_ports = format_jit_port_request(vm.get("ports"))
-                vms.append("[{}: {}]".format(vm_name, vm_ports))
+                vms.append(f"[{vm_name}: {vm_ports}]")
             requests_table_output.append(
                 {
                     "VirtualMachines": ", ".join(vms),
@@ -1203,7 +1207,7 @@ def delete_jit_command(client: MsClient, args: dict):
     demisto.results(
         {
             "Type": entryTypes["note"],
-            "Contents": "Policy - {} has been deleted sucessfully.".format(policy_name),
+            "Contents": f"Policy - {policy_name} has been deleted sucessfully.",
             "ContentsFormat": formats["text"],
             "EntryContext": ec,
         }
@@ -1221,9 +1225,9 @@ def list_sc_storage_command(client: MsClient):
 
     """
     accounts = client.list_sc_storage().get("value")
-    outputs = list()
+    outputs = []
     for account in accounts:
-        account_id_array = account.get("id", str()).split("/")
+        account_id_array = account.get("id", "").split("/")
         resource_group_name = account_id_array[account_id_array.index("resourceGroups") + 1]
         outputs.append(
             {
@@ -1254,7 +1258,7 @@ def list_sc_subscriptions_command(client: MsClient):
 
     """
     subscriptions = client.list_sc_subscriptions().get("value")
-    outputs = list()
+    outputs = []
     for sub in subscriptions:
         outputs.append(
             {
@@ -1313,30 +1317,42 @@ def test_module(client: MsClient):
 def main():
     params: dict = demisto.params()
     server = params.get('server_url', '').rstrip('/') + '/'
-    tenant = params.get('tenant_id')
-    auth_and_token_url = params.get('auth_id', '')
-    enc_key = params.get('enc_key')
+    tenant = params.get('credentials_tenant_id', {}).get('password') or params.get('tenant_id')
+    auth_and_token_url = params.get('credentials_auth_id', {}).get('password') or params.get('auth_id', '')
+    if not auth_and_token_url:
+        raise DemistoException('ID must be provided.')
+    enc_key = params.get('credentials_enc_key', {}).get('password') or params.get('enc_key')
     use_ssl = not params.get('unsecure', False)
-    self_deployed: bool = params.get('self_deployed', False)
     proxy = params.get('proxy', False)
-    subscription_id = demisto.args().get("subscription_id") or params.get("default_sub_id")
+    subscription_id = demisto.args().get("subscription_id") or params.get(
+        'credentials_default_sub_id', {}).get('password') or params.get("default_sub_id")
     ok_codes = (200, 201, 202, 204)
-    certificate_thumbprint = params.get('certificate_thumbprint')
+    certificate_thumbprint = params.get('credentials_certificate_thumbprint', {}).get(
+        'password') or params.get('certificate_thumbprint')
     private_key = params.get('private_key')
-    if not self_deployed and not enc_key:
-        raise DemistoException('Key must be provided. For further information see '
-                               'https://xsoar.pan.dev/docs/reference/articles/microsoft-integrations---authentication')
-    elif not enc_key and not (certificate_thumbprint and private_key):
-        raise DemistoException('Key or Certificate Thumbprint and Private Key must be provided.'
-                               'For further information see '
-                               'https://xsoar.pan.dev/docs/reference/articles/microsoft-integrations---authentication')
+    managed_identities_client_id = get_azure_managed_identities_client_id(params)
+    self_deployed: bool = params.get('self_deployed', False) or managed_identities_client_id is not None
+
+    if not managed_identities_client_id:
+        if not (tenant and auth_and_token_url):
+            raise DemistoException('Token and ID must be provided. For further information see '
+                                   'https://xsoar.pan.dev/docs/reference/articles/microsoft-integrations---authentication')
+
+        if not self_deployed and not enc_key:
+            raise DemistoException('Key must be provided. For further information see '
+                                   'https://xsoar.pan.dev/docs/reference/articles/microsoft-integrations---authentication')
+        elif not enc_key and not (certificate_thumbprint and private_key):
+            raise DemistoException('Key or Certificate Thumbprint and Private Key must be provided.'
+                                   'For further information see '
+                                   'https://xsoar.pan.dev/docs/reference/articles/microsoft-integrations---authentication')
 
     try:
         if demisto.command() in SUB_ID_REQUIRING_CMD and not subscription_id:
             raise DemistoException("A subscription ID must be provided.")
         client = MsClient(tenant_id=tenant, auth_id=auth_and_token_url, enc_key=enc_key, app_name=APP_NAME, proxy=proxy,
                           server=server, verify=use_ssl, self_deployed=self_deployed, subscription_id=subscription_id,
-                          ok_codes=ok_codes, certificate_thumbprint=certificate_thumbprint, private_key=private_key)
+                          ok_codes=ok_codes, certificate_thumbprint=certificate_thumbprint, private_key=private_key,
+                          managed_identities_client_id=managed_identities_client_id)
 
         if demisto.command() == "test-module":
             # If the command will fail, error will be thrown from the request itself
@@ -1377,14 +1393,13 @@ def main():
             return_outputs(*list_sc_subscriptions_command(client))
         elif demisto.command() == "azure-get-secure-score":
             return_outputs(*get_secure_scores_command(client, demisto.args()))
-
+        elif demisto.command() == "azure-sc-auth-reset":
+            return_results(reset_auth())
     except Exception as err:
         LOG(str(err))
         LOG.print_log()
         return_error(str(err))
 
-
-from MicrosoftApiModule import *  # noqa: E402
 
 if __name__ in ['__main__', 'builtin', 'builtins']:
     main()

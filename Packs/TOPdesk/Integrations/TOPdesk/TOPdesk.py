@@ -1,5 +1,7 @@
 import demistomock as demisto  # noqa: F401
 from CommonServerPython import *  # noqa: F401
+import requests
+
 
 """TOPdesk integration for Cortex XSOAR"""
 
@@ -7,7 +9,6 @@ from CommonServerPython import *  # noqa: F401
 import math
 import os
 import shutil
-import traceback
 from distutils.version import LooseVersion
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
@@ -150,7 +151,7 @@ class Client(BaseClient):
         except Exception:
             demisto.debug('No items found')
             result = []
-        return(result)
+        return (result)
 
     def get_list(self, endpoint: str) -> List[Dict[str, Any]]:
         """Get list of objects using the API endpoint."""
@@ -1278,7 +1279,15 @@ def fetch_incidents(client: Client,
         topdesk_incident['mirror_instance'] = demisto.integrationInstance()
         if float(last_fetch_datetime.timestamp()) < float(incident_created_time.timestamp()):
             labels = []
-            actions = client.list_actions(incident_id=topdesk_incident['id'], incident_number=None)
+            try:
+                actions = client.list_actions(incident_id=topdesk_incident['id'], incident_number=None)
+            except DemistoException as error:
+                demisto.debug(f'{error=}')
+                # make sure we catch only JSONDecodeError errors, in case it is a different exception, should be raised.
+                if isinstance(error.exception, (json.decoder.JSONDecodeError, requests.exceptions.JSONDecodeError)):
+                    actions = []
+                else:
+                    raise error
             for action in actions:
                 entry_date = dateparser.parse(action["entryDate"], settings={'TIMEZONE': 'UTC'})  # type: ignore
                 if action["operator"]:
@@ -1658,7 +1667,6 @@ def main() -> None:
 
     # Log exceptions and return errors
     except Exception as e:
-        demisto.error(traceback.format_exc())  # print the traceback
         return_error(f'Failed to execute {demisto.command()} command.\nError:\n{str(e)}')
 
 

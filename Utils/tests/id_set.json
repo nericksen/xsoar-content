@@ -8750,17 +8750,6 @@
             }
         },
         {
-            "TestRegPathReputation": {
-                "name": "TestRegPathReputation",
-                "file_path": "Packs/DeveloperTools/TestPlaybooks/script-TestRegPathReputation.yml",
-                "fromversion": "5.0.0",
-                "script_executions": [
-                    "RegPathReputationBasicLists"
-                ],
-                "pack": "DeveloperTools"
-            }
-        },
-        {
             "TestXml2JSON": {
                 "name": "TestXml2JSON",
                 "file_path": "Packs/DeveloperTools/TestPlaybooks/script-TestXml2JSON.yml",
@@ -20207,7 +20196,7 @@
         {
             "AWS - Lambda": {
                 "name": "AWS - Lambda",
-                "file_path": "Packs/AWS-Lambda/Integrations/AWS-Lambda/AWS-Lambda.yml",
+                "file_path": "Packs/AWS-Lambda/Integrations/AWS_Lambda/AWS_Lambda.yml",
                 "fromversion": "5.0.0",
                 "commands": [
                     "aws-lambda-get-function",
@@ -23405,9 +23394,6 @@
                     "fireeye-hx-create-indicator",
                     "fireeye-hx-append-conditions",
                     "fireeye-hx-get-all-hosts-information"
-                ],
-                "tests": [
-                    "FireEye HX Test"
                 ],
                 "pack": "FireEyeHX"
             }
@@ -34523,26 +34509,6 @@
                     "FilterByList"
                 ],
                 "pack": "CommonScripts"
-            }
-        },
-        {
-            "FireEye HX Test": {
-                "name": "FireEye HX Test",
-                "file_path": "Packs/FireEyeHX/TestPlaybooks/playbook-FireEyeHX_Test.yml",
-                "fromversion": "5.0.0",
-                "implementing_scripts": [
-                    "DeleteContext"
-                ],
-                "command_to_integration": {
-                    "fireeye-hx-get-alerts": "FireEye HX",
-                    "fireeye-hx-get-alert": "FireEye HX",
-                    "fireeye-hx-get-host-information": "FireEye HX",
-                    "fireeye-hx-get-indicators": "",
-                    "fireeye-hx-get-indicator": "FireEye HX",
-                    "fireeye-hx-create-indicator": "FireEye HX",
-                    "fireeye-hx-append-conditions": ""
-                },
-                "pack": "FireEyeHX"
             }
         },
         {

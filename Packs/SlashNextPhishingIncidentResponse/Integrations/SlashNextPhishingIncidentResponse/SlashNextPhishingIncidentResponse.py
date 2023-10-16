@@ -6,8 +6,9 @@ from CommonServerUserPython import *
 from typing import List, Dict
 import requests
 import base64
+import urllib3
 
-requests.packages.urllib3.disable_warnings()
+urllib3.disable_warnings()
 
 """
 Created on August 1, 2019
@@ -94,7 +95,8 @@ def get_dbot_std_context(indicator, ioc_type, verdict, threat_type):
         'Indicator': indicator,
         'Type': ioc_type.lower(),
         'Vendor': 'SlashNext Phishing Incident Response',
-        'Score': dbot_score
+        'Score': dbot_score,
+        'Reliability': demisto.params().get('integrationReliability')
     }
 
     if ioc_type.lower() == 'ip':

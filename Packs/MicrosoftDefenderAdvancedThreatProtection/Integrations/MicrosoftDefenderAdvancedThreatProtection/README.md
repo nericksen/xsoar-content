@@ -1,69 +1,112 @@
 ## Overview
+
 ---
 Use the Microsoft Defender for Endpoint (previously Microsoft Defender Advanced Threat Protection (ATP)) integration for preventative protection, post-breach detection, automated investigation, and response.
 
 ## Microsoft Defender Advanced Threat Protection Playbook
+
 ---
 Microsoft Defender Advanced Threat Protection Get Machine Action Status
 
 ## Use Cases
+
 ---
+
 - Fetching incidents.
 - Managing machines and performing actions on them.
 - Blocking files and applications.
 - Uploading and digesting threat indicators for the actions of allow, block, or alert.
 
 ## Authentication
+
 ---
+There are two different authentication methods for self-deployed configuration: 
+
+- [Client Credentials flow](https://learn.microsoft.com/en-us/microsoft-365/security/defender-endpoint/exposed-apis-create-app-webapp?view=o365-worldwide)
+- [Authorization Code flow](https://learn.microsoft.com/en-us/microsoft-365/security/defender-endpoint/exposed-apis-create-app-nativeapp?view=o365-worldwide)
 For more details about the authentication used in this integration, see [Microsoft Integrations - Authentication](https://xsoar.pan.dev/docs/reference/articles/microsoft-integrations---authentication).
 
 **Note**: If you previously configured the Windows Defender ATP integration, you need to perform the authentication flow again for this integration and enter the authentication parameters you receive when configuring the integration instance.
 
+
+**Note**: When using the Authorization Code Flow, please make sure the user you authenticate with has the required role permissions. See [this](https://docs.microsoft.com/en-us/microsoft-365/security/defender-endpoint/initiate-autoir-investigation?view=o365-worldwide#permissions) as an example.
+
 ### Required Permissions
-* AdvancedQuery.Read.All - Application
-* Alert.ReadWrite.All - Application
-* File.Read.All - Application
-* Ip.Read.All - Application
-* Machine.CollectForensics - Application
-* Machine.Isolate - Application
-* Machine.ReadWrite.All - Application
-* Machine.RestrictExecution - Application
-* Machine.Scan - Application
-* Machine.StopAndQuarantine - Application
-* ThreatIndicators.ReadWrite.OwnedBy - Application. Please note - this permission is only used for the deprecated indicators command. If you are not using the deprecated indicators command, it is not required. 
-* Url.Read.All - Application
-* User.Read.All - Application
-* Ti.ReadWrite (Read and write IOCs belonging to the app) - Application
-* Vulnerability.Read.All - Application
+
+Please add the following permissions to the app registration. Choose application permissions for the Client Credentials flow, and delegated permissions for the Authorization Code flow.
+
+- WindowsDefenderATP - AdvancedQuery.Read.All - Application / AdvancedQuery.Read - Delegated
+- WindowsDefenderATP - Alert.ReadWrite.All - Application / Alert.ReadWrite - Delegated
+- WindowsDefenderATP - File.Read.All - Application / Delegated
+- WindowsDefenderATP - Ip.Read.All - Application / Delegated
+- WindowsDefenderATP - Machine.CollectForensics - Application / Delegated
+- WindowsDefenderATP - Machine.Isolate - Application / Delegated
+- WindowsDefenderATP - Machine.ReadWrite.All - Application / Machine.ReadWrite - Delegated
+- WindowsDefenderATP - Machine.RestrictExecution - Application / Delegated
+- WindowsDefenderATP - Machine.Scan - Application / Delegated
+- WindowsDefenderATP - Machine.StopAndQuarantine - Application / Delegated
+- WindowsDefenderATP - ThreatIndicators.ReadWrite.OwnedBy - Application / Delegated. Please note - this permission is only used for the deprecated indicators command. If you are not using the deprecated indicators command, it is not required. 
+- WindowsDefenderATP - Url.Read.All - Application / Delegated
+- WindowsDefenderATP - User.Read.All - Application / Delegated
+- WindowsDefenderATP - Ti.ReadWrite (Read and write IOCs belonging to the app) - Application / Delegated
+- WindowsDefenderATP - Vulnerability.Read.All - Application / Vulnerability.Read - Delegated
+- WindowsDefenderATP - Software.Read.All - Application / Software.Read - Delegated
+- WindowsDefenderATP - Machine.LiveResponse - Application / Delegated
+- WindowsDefenderATP - Machine.Read.All - Application / Machine.Read - Delegated
 
 ## Configure Microsoft Defender for Endpoint on Cortex XSOAR
+
 ---
 
 1. Navigate to **Settings** > **Integrations** > **Servers & Services**.
 2. Search for Microsoft Defender for Endpoint.
 3. Click **Add instance** to create and configure a new integration instance.
     
-    | **Parameter** | **Description** | **Example** |
-    | ---------             | -----------           | -------            |
-    | Name | A meaningful name for the integration instance. | XXXXX Instance Alpha |
-    | Host URL | The URL to the Microsoft Defender for Endpoint server, including the scheme. | `https://api.securitycenter.windows.com` |
-    | ID | The ID used to gain access to the integration. | N/A |
-    | Token | A piece of data that servers use to verify for authenticity. | eea810f5-a6f6 |
-    | Certificate Thumbprint | Used for certificate authentication. As appears in the "Certificates & secrets" page of the app. | A97BF50B7BB6D909CE8CAAF9FA8109A571134C33 |
-    | Private Key | Used for certificate authentication. The private key of the registered certificate. | eea810f5-a6f6 |
-    | Fetch Incidents | Whether to fetch the incidents. | N/A |
-    | Incident Type | The type of incident to select. | Phishing |
-    | Status to filter out alerts for fetching as incidents| The property values are, "New", "InProgress" or "Resolved". Comma-separated lists are supported, e.g., New,Resolved. | New,In Progress,Resolved |
-    | Severity to filter out alerts for fetching as incidents | The property values are, "Informational", "Low", "Medium" and "High". Comma-separated lists are supported, e.g., Medium,High. | Medium,High |
-    | Trust any Certificate (Not Secure) | When selected, certificates are not checked. | N/A |
-    | Use system proxy settings | Runs the integration instance using the proxy server (HTTP or HTTPS) that you defined in the server configuration. | https://proxyserver.com |
-    | First Fetch Timestamp | The first timestamp to be fetched in number, time unit format. | 12 hours, 7 days |
-    | self-deployed | Use a self-deployed Azure Application. |  N/A |
+    | **Parameter**                                           | **Description**                                                                                                               | **Example**                              |
+    |---------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|------------------------------------------|
+    | Name                                                    | A meaningful name for the integration instance.                                                                               | XXXXX Instance Alpha                     |
+    | Endpoint Type                                           | The endpoint for accessing Microsoft Defender for Endpoint, see table below.                                                  | Worldwide                                |
+    | Fetches Incidents                                       | Whether to fetch the incidents.                                                                                               | N/A                                      |
+    | Incident Type                                           | The type of incident to select.                                                                                               | Phishing                                 |
+    | ID                                                      | The ID used to gain access to the integration. Your Client/Application ID.                                                    | N/A                                      |
+    | Token                                                   | A piece of data that servers use to verify for authenticity. This is your Tenant ID.                                          | eea810f5-a6f6                            |
+    | Key                                                     | Your client secret.                                                                                                           |                                          |
+    | Certificate Thumbprint                                  | Used for certificate authentication. As appears in the "Certificates & secrets" page of the app.                              | A97BF50B7BB6D909CE8CAAF9FA8109A571134C33 |
+    | Private Key                                             | Used for certificate authentication. The private key of the registered certificate.                                           | eea810f5-a6f6                            |
+    | Authentication Type                                     | Type of authentication - either Authorization Code \(recommended\) or Client Credentials.                                     |                                          |
+    | Application redirect URI (for authorization code mode)  |                                                                                                                               | False                                    |
+    | Authorization code                                      | for user-auth mode - received from the authorization step. see Detailed Instructions section                                  | False                                    |
+    | Azure Managed Identities Client ID                      | The Managed Identities client ID for authentication - relevant only if the integration is running on Azure VM.                | UUID                                     |
+    | Status to filter out alerts for fetching as incidents   | The property values are, "New", "InProgress" or "Resolved". Comma-separated lists are supported, e.g., New,Resolved.          | New,In Progress,Resolved                 |
+    | DetecitonSource to filter out alters for fetching as incidents.  | The property values are, "Antivirus", "CustomDetection", "CustomTI", "EDR" and "MDO". Comma-separated lists are supported, e.g., Antivirus,EDR.          | CustomDetection,EDR   |
+    | Severity to filter out alerts for fetching as incidents | The property values are, "Informational", "Low", "Medium" and "High". Comma-separated lists are supported, e.g., Medium,High. | Medium,High                              |
+    | Maximum number of incidents to fetch                    | The maximum number of incidents to retrieve per fetch.                                                                        | 50                                       |
+    | Trust any Certificate (Not Secure)                      | When selected, certificates are not checked.                                                                                  | N/A                                      |
+    | Fetch alert evidence                                    | When selected, fetches alerts in Microsoft Defender.                                                                          | N/A                                      |
+    | Use system proxy settings                               | Runs the integration instance using the proxy server (HTTP or HTTPS) that you defined in the server configuration.            | <https://proxyserver.com>                |
+    | Use a self-deployed Azure Application                   | For authorization code flow, mark this as true.                                                                               | N/A                                      |
+    | First Fetch Timestamp                                   | The first timestamp to be fetched in the format \<number\> \<time unit\>.                                                     | 12 hours, 7 days                         |
+    | Server URL                                              | The URL to the Microsoft Defender for Endpoint server, including the scheme, see note below.                                  | `https://api.securitycenter.windows.com` |
 
+4. Endpoint Type options
 
-4. Click **Test** to validate the URLs, token, and connection.
+    | Endpoint Type    | Description                                                                                  |
+    |------------------|----------------------------------------------------------------------------------------------|
+    | Worldwide        | The publicly accessible Microsoft Defender for Endpoint                                      |
+    | EU Geo Proximity | Microsoft Defender for Endpoint Geo proximity end point for the UK customers.                |
+    | UK Geo Proximity | Microsoft Defender for Endpoint Geo proximity end point for the UK customers.                |
+    | US Geo Proximity | Microsoft Defender for Endpoint Geo proximity end point for the US customers.                |
+    | US GCC           | Microsoft Defender for Endpoint for the USA Government Cloud Community (GCC)                 |
+    | US GCC-High      | Microsoft Defender for Endpoint for the USA Government Cloud Community High (GCC-High)       |
+    | DoD              | Microsoft Defender for Endpoint for the USA Department of Defence (DoD)                      |
+    | Custom           | Custom endpoint configuration to the Microsoft Defender for Endpoint, please see note below. |
+   
+   - Note: In most cases setting Endpoint type is preferred to setting Server URL, only use it cases where a custom URL is required for accessing a national cloud or for cases of self-deployment.
+
+5. Click **Test** to validate the URLs, token, and connection.
 
 ## Fetched Incidents Data
+
 - id
 - incidentId
 - investigationId
@@ -92,9 +135,11 @@ For more details about the authentication used in this integration, see [Microso
 
 
 ## Commands
+
 ---
 You can execute these commands from the Cortex XSOAR CLI, as part of an automation, or in a playbook.
 After you successfully execute a command, a DBot message appears in the War Room with the command details.
+
 1. microsoft-atp-isolate-machine
 2. microsoft-atp-unisolate-machine
 3. microsoft-atp-get-machines
@@ -144,17 +189,28 @@ After you successfully execute a command, a DBot message appears in the War Room
 47. microsoft-atp-indicator-batch-update
 48. microsoft-atp-get-alert-by-id
 49. microsoft-atp-request-and-download-investigation-package
+50. microsoft-atp-offboard-machine
+51. microsoft-atp-list-software
+52. microsoft-atp-list-software-version-distribution
+53. microsoft-atp-list-machines-by-software
+54. microsoft-atp-list-vulnerabilities-by-software
+55. microsoft-atp-list-vulnerabilities-by-machine
+56. microsoft-atp-list-vulnerabilities
+57. microsoft-atp-list-missing-kb-by-software
 
 ### 1. microsoft-atp-isolate-machine
+
 ---
 Isolates a machine from accessing external network.
 
 ##### Required Permissions
+
 Machine.Isolate	
 
 ##### Base Command
 
 `microsoft-atp-isolate-machine`
+
 ##### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -182,8 +238,11 @@ Machine.Isolate
 | MicrosoftATP.MachineAction.RelatedFileInfo.FileIdentifierType | String | The type of the file identifier. Possible values: "SHA1" ,"SHA256", and "MD5". | 
 
 ##### Command example
+
 ```!microsoft-atp-isolate-machine comment=isolate_test_3 isolation_type=Full machine_id="12342c13fef,12342c13fef8f06606"```
+
 ##### Context Example
+
 ```json
 {
     "MicrosoftATP": {
@@ -228,6 +287,7 @@ Machine.Isolate
 ##### Human Readable Output
 
 >##### The isolation request has been submitted successfully:
+>
 >|ID|Type|Requestor|RequestorComment|Status|MachineID|ComputerDNSName|
 >|---|---|---|---|---|---|---|
 >| 1f3098e20464 | Isolate | 2f48b784-5da5-4e61-9957-012d2630f1e4 | isolate_test_3 | Pending | 12342c13fef | desktop-s2455r8 |
@@ -235,15 +295,18 @@ Machine.Isolate
 
 
 ### 2. microsoft-atp-unisolate-machine
+
 ---
 Remove a machine from isolation.
 
 ##### Required Permissions
+
 Machine.Isolate	
 
 ##### Base Command
 
 `microsoft-atp-unisolate-machine`
+
 ##### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -270,8 +333,11 @@ Machine.Isolate
 | MicrosoftATP.MachineAction.RelatedFileInfo.FileIdentifierType | String | The type of the file identifier. Possible values: "SHA1" ,"SHA256", and "MD5". | 
 
 ##### Command example
+
 ```!microsoft-atp-unisolate-machine comment=unisolate_test machine_id="4899036531e3,f70f9fe6b29"```
+
 ##### Context Example
+
 ```json
 {
     "MicrosoftATP": {
@@ -316,6 +382,7 @@ Machine.Isolate
 ##### Human Readable Output
 
 >### The request to stop the isolation has been submitted successfully:
+>
 >|ID|Type|Requestor|RequestorComment|Status|MachineID|ComputerDNSName|
 >|---|---|---|---|---|---|---|
 >| 488176cc | Unisolate | 2f48b784-5da5-4e61-9957-012d2630f1e4 | unisolate_test | Pending | 4899036531e3 | devicename_2 |
@@ -323,13 +390,15 @@ Machine.Isolate
 
 
 ### 3. microsoft-atp-get-machines
-***
+
+---
 Retrieves a collection of machines that have communicated with WDATP cloud in the last 30 days. Note, only ip or hostname can be a comma-separated list. If both are given as lists, an error will appear.
 
 
 #### Base Command
 
 `microsoft-atp-get-machines`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -339,6 +408,8 @@ Retrieves a collection of machines that have communicated with WDATP cloud in th
 | risk_score | The machine risk score. Possible values are: Low, Medium, High. | Optional | 
 | health_status | The machine health status. Possible values are: Active, Inactive. | Optional | 
 | os_platform | The machine's OS platform. Only a single platform can be added. | Optional | 
+| page_size | Number of machines to return in a page - must be lower or equal to 10,000. | Optional | 
+| page_num | The page number to retrieve. Default is 1. | Optional | 
 
 
 #### Context Output
@@ -365,8 +436,11 @@ Retrieves a collection of machines that have communicated with WDATP cloud in th
 | MicrosoftATP.Machine.MachineTags | String | Set of machine tags. | 
 
 #### Command example
+
 ```!microsoft-atp-get-machines hostname=desktop-s health_status=Active os_platform=Windows10 ip=1.2.3.4,1.2.3.5```
+
 #### Context Example
+
 ```json
 {
     "MicrosoftATP": {
@@ -426,21 +500,25 @@ Retrieves a collection of machines that have communicated with WDATP cloud in th
 #### Human Readable Output
 
 >### Microsoft Defender ATP Machines:
+>
 >|ID|ComputerDNSName|OSPlatform|LastIPAddress|LastExternalIPAddress|HealthStatus|RiskScore|ExposureLevel|
 >|---|---|---|---|---|---|---|---|
 >| f70f9fe6b29 | desktop-s | Windows10 | 1.2.3.4 | 127.0.0.1 | Active | Medium | Medium |
 
 
 ### 4. microsoft-atp-get-file-related-machines
+
 ---
 Gets a collection of machines related to a given file's SHA1 hash.
 
 ##### Required Permissions
+
 Machine.ReadWrite.All
 
 #### Base Command
 
 `microsoft-atp-get-file-related-machines`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -473,8 +551,11 @@ Machine.ReadWrite.All
 | MicrosoftATP.FileMachine.File | String | The machine related file hash. | 
 
 #### Command example
+
 ```!microsoft-atp-get-file-related-machines file_hash=1234567891acvgfdertukthgfdertyjhgfdset54,1234567891acvgfdertukthgfdertyjhgfdset53```
+
 #### Context Example
+
 ```json
 {
     "MicrosoftATP": {
@@ -595,6 +676,7 @@ Machine.ReadWrite.All
 #### Human Readable Output
 
 >### Microsoft Defender ATP machines related to files ['1234567891acvgfdertukthgfdertyjhgfdset54', '1234567891acvgfdertukthgfdertyjhgfdset53']
+>
 >|ID|ComputerDNSName|OSPlatform|LastIPAddress|LastExternalIPAddress|HealthStatus|RiskScore|ExposureLevel|
 >|---|---|---|---|---|---|---|---|
 >| f70f9fe6 | desktop-s9 | Windows10 | 1.2.3.4 | 127.0.0.1 | Active | Medium | Medium |
@@ -602,15 +684,18 @@ Machine.ReadWrite.All
 
 
 ### 5. microsoft-atp-get-machine-details
+
 ---
 Gets a machine's details by its identity.
 
 ##### Required Permissions
+
 Machine.ReadWrite.All
 
 #### Base Command
 
 `microsoft-atp-get-machine-details`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -646,8 +731,11 @@ Machine.ReadWrite.All
 | MicrosoftATP.Machine.NetworkInterfaces.Status | String | Status for the Network interface \(e.g. Up, Down\). | 
 
 #### Command example
+
 ```!microsoft-atp-get-machine-details machine_id=f70f9fe6b29,4899036531e```
+
 #### Context Example
+
 ```json
 {
     "MicrosoftATP": {
@@ -758,6 +846,7 @@ Machine.ReadWrite.All
 #### Human Readable Output
 
 >### Microsoft Defender ATP machines ['f70f9fe6b29','4899036531e'] details:
+>
 >|ID|ComputerDNSName|OSPlatform|LastIPAddress|LastExternalIPAddress|HealthStatus|RiskScore|ExposureLevel|IPAddresses|
 >|---|---|---|---|---|---|---|---|---|
 >| f70f9fe6 | desktop-s9 | Windows10 | 1.2.3.4 | 127.0.0.1 | Active | Medium | Medium | 1. \| MAC : 1234645645 \| IP Addresses : 1.2.3.4,1234::1234:1234:3177:11dc \| Type : Ethernet         \| Status : Up<br/>2. \| MAC :              \| IP Addresses : 127.0.0.1,::1                          \| Type : SoftwareLoopback \| Status : Up |
@@ -765,15 +854,18 @@ Machine.ReadWrite.All
 
 
 ### 6. microsoft-atp-run-antivirus-scan
+
 ---
 Initiates Microsoft Defender Antivirus scan on a machine.
 
 ##### Required Permissions
+
 Machine.Scan	
 
 #### Base Command
 
 `microsoft-atp-run-antivirus-scan`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -801,8 +893,11 @@ Machine.Scan
 | MicrosoftATP.MachineAction.RelatedFileInfo.FileIdentifierType | String | The type of the file identifier. Possible values: "SHA1" ,"SHA256", and "MD5". | 
 
 #### Command example
+
 ```!microsoft-atp-run-antivirus-scan machine_id=f70f9fe6,48990365 comment=test3 scan_type=Quick```
+
 #### Context Example
+
 ```json
 {
     "MicrosoftATP": {
@@ -847,6 +942,7 @@ Machine.Scan
 #### Human Readable Output
 
 >### Antivirus scan successfully triggered
+>
 >|ID|Type|Requestor|RequestorComment|Status|MachineID|ComputerDNSName|
 >|---|---|---|---|---|---|---|
 >| 98cf0adc | RunAntiVirusScan | 2f48b784-5da5-4e61-9957-012d2630f1e4 | test3 | Pending | f70f9fe6 | desktop-s9 |
@@ -854,15 +950,18 @@ Machine.Scan
 
 
 ### 7. microsoft-atp-list-alerts
+
 ---
 Gets a list of alerts that are present on the system. Filtering can be done on a single argument only.
 
 ##### Required Permissions
+
 Alert.ReadWrite.All	
 
 ##### Base Command
 
 `microsoft-atp-list-alerts`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -911,8 +1010,11 @@ Alert.ReadWrite.All
 | MicrosoftATP.Alert.RBACGroupName | String | The device RBAC group name. |
 
 #### Command example
+
 ```!microsoft-atp-list-alerts category=Malware severity=Informational status=Resolved creation_time="3 days" limit=1```
+
 #### Context Example
+
 ```json
 {
     "MicrosoftATP": {
@@ -988,21 +1090,25 @@ Alert.ReadWrite.All
 #### Human Readable Output
 
 >### Microsoft Defender ATP alerts with limit of 1:
+>
 >|ID|Title|Description|IncidentID|Severity|Status|Category|ThreatFamilyName|MachineID|
 >|---|---|---|---|---|---|---|---|---|
 >| da637798264000574516_1915313662 | 'Test_File' malware was prevented | Malware and unwanted software are undesirable applications that perform annoying, disruptive, or harmful actions on affected machines. Some of these undesirable applications can replicate and spread from one machine to another. Others are able to receive commands from remote attackers and perform activities associated with cyber attacks.<br/><br/>This detection might indicate that the malware was stopped from delivering its payload. However, it is prudent to check the machine for signs of infection. | 648 | Informational | Resolved | Malware | Test_File | 4cceb3c642212014e0e9553aa8b59e999ea515ff |
 
 
 ### 8. microsoft-atp-update-alert
+
 ---
 Updates the properties of an alert entity.
 
 ##### Required Permissions
+
 Alert.ReadWrite.All	
 
 ##### Base Command
 
 `microsoft-atp-update-alert`
+
 ##### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -1010,8 +1116,8 @@ Alert.ReadWrite.All
 | alert_id | The alert ID to update. | Required | 
 | status | The alert status to update. Possible values: "New", "InProgress", and "Resolved". | Optional | 
 | assigned_to | The owner of the alert. | Optional | 
-| classification | The specification of the alert. Possible values: "Unknown", "FalsePositive", "TruePositive". | Optional | 
-| determination | The determination of the alert. Possible values: "NotAvailable", "Apt", "Malware", "SecurityPersonnel", "SecurityTesting", "UnwantedSoftware", and "Other". | Optional | 
+| classification | The specification of the alert. Possible values: "Unknown", "FalsePositive", "TruePositive", "InformationalExpectedActivity". | Optional | 
+| determination | The determination of the alert. Possible values: "NotAvailable", "Malware", "SecurityTesting", "UnwantedSoftware", and "Other". | Optional | 
 | comment | The comment to be added to the alert. | Optional | 
 
 
@@ -1047,10 +1153,12 @@ Alert.ReadWrite.All
 
 
 ##### Command Example
+
 ```!microsoft-atp-update-alert alert_id=da637200417169017725_183736971 status=InProgress```
 
 ##### Context Example
-```
+
+```json
 {
     "MicrosoftATP.Alert": {
         "Status": "InProgress", 
@@ -1060,39 +1168,91 @@ Alert.ReadWrite.All
 ```
 
 ##### Human Readable Output
+
 The alert da637200417169017725_183736971 has been updated successfully
 
 
 ### 9. microsoft-atp-advanced-hunting
+
 ---
-Runs programmatic queries in Microsoft Defender ATP Portal (https://securitycenter.windows.com/hunting). You can only run a query on data from the last 30 days. The maximum number of rows is 10,000. The number of executions is limited to 15 calls per minute, and 15 minutes of running time every hour, and 4 hours of running time a day.
+Runs programmatic queries in Microsoft Defender ATP Portal (<https://securitycenter.windows.com/hunting>). 
+
+- You can only run a query on data from the last 30 days. 
+- The maximum number of rows is 10,000. 
+- The number of executions is limited to 15 calls per minute, and 15 minutes of running time every hour, and 4 hours of running time a day.
+- This API can only query tables belonging to Microsoft Defender for Endpoint.
+The following reference - [Data Schema](https://learn.microsoft.com/en-us/microsoft-365/security/defender/advanced-hunting-schema-tables?view=o365-worldwide#learn-the-schema-tables),
+lists all the tables in the schema. Each table name links to a page describing the column names for that table and which service it applies to. 
 
 ##### Required Permissions
+
 AdvancedQuery.Read.All	
 
 ##### Base Command
 
 `microsoft-atp-advanced-hunting`
-##### Input
+
+#### Input
 
 | **Argument Name** | **Description** | **Required** |
 | --- | --- | --- |
-| query | The query to run. | Required | 
-| timeout | The amount of time (in seconds) that a request waits for the query response before a timeout occurs. | Optional | 
-| time_range | Time range to look back. Expected syntax is a human readable time range, e.g. 60 minutes, 6 hours, 1 day, etc. | Optional |
+| query | The query to run. Must be passed if query_batch argument is empty. | Optional | 
+| timeout | The amount of time (in seconds) that a request waits for the query response before a timeout occurs. If specified with query_batch, will be applied to all queries in the array. Default is 10. | Optional | 
+| time_range | Time range to look back. The expected syntax is a human-readable time range, e.g., 60 minutes, 6 hours, 1 day, etc. If specified with query_batch, applies to all queries in the array. | Optional | 
+| query_batch | A JSON array of queries, limited to 10 queries. Cannot be provided with the query argument. Example for input:<br/>[<br/>    {<br/>    "query": "query #1",<br/>    "name": "name #1",<br/>    "timeout": "timeout #1"<br/>    "time_range": "2 days ago"	// Non-mandatory, will override the {time_range} argument<br/>    },<br/>    {<br/>    "query": "query #2",<br/>    "name": "name #2",<br/>    "timeout": "timeout #2"<br/>    "time_range": "6 days ago"t<br/>    }<br/>  ]<br/>. The query and name fields are mandatory. If timeout and time_range are specified, they will override the {timeout} and {time_range} argument.| Optional | 
+| name | If stated along with query, the response will be saved in context under the Result.name path. | Optional | 
 
-##### Context Output
+
+#### Context Output
 
 | **Path** | **Type** | **Description** |
 | --- | --- | --- |
 | MicrosoftATP.Hunt.Result | String | The query results. | 
 
+#### Command example
+
+```!microsoft-atp-advanced-hunting query_batch=`{"queries": [{"query": "DeviceInfo | where OnboardingStatus == 'Onboarded' | limit 10 | distinct DeviceName", "name": "name", "timeout": "20"}]}12`
+
+#### Context Example
+
+```json
+{
+    "MicrosoftATP": {
+        "Hunt": {
+            "Result": [
+                {
+                    "name": [
+                        {
+                            "DeviceName": "msde-agent-host-centos7.c.dmst-integrations.internal"
+                        },
+                        {
+                            "DeviceName": "desktop-s2455r8"
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}
+```
+
+#### Human Readable Output
+
+>### Hunt results for name query:
+>
+>|DeviceName|
+>|---|
+>| msde-agent-host-centos7.c.dmst-integrations.internal |
+>| desktop-s2455r8 |
+
 
 ##### Command Example
+
 ```!microsoft-atp-advanced-hunting query="DeviceLogonEvents | take 1 | project DeviceId, ReportId, tostring(Timestamp)"```
 
 ##### Context Example
-```
+
+```json
 {
     "MicrosoftATP.Hunt.Result": [
         {
@@ -1105,22 +1265,26 @@ AdvancedQuery.Read.All
 ```
 
 ##### Human Readable Output
+
 ##### Hunt results
+
 |Timestamp|DeviceId|ReportId|
 |---|---|---|
 | 2020-02-23T07:14:42.1599815Z | 4899036531e374137f63289c3267bad772c13fef | 35275 |
 
-
 ### 10. microsoft-atp-create-alert
+
 ---
 Creates a new alert entity using event data, as obtained from the Advanced Hunting.
 
 ##### Required Permissions
+
 Alert.ReadWrite.All	
 
 ##### Base Command
 
 `microsoft-atp-create-alert`
+
 ##### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -1167,10 +1331,12 @@ Alert.ReadWrite.All
 
 
 ##### Command Example
+
 ```!microsoft-atp-create-alert category=Backdoor description="test" report_id=20279 event_time=2020-02-23T07:22:07.1532018Z machine_id=deviceid_2 recommended_action="runAntiVirusScan" severity=Low title="testing alert"```
 
 ##### Context Example
-```
+
+```json
 {
     "MicrosoftATP.Alert": {
         "Category": "Backdoor", 
@@ -1208,22 +1374,27 @@ Alert.ReadWrite.All
 ```
 
 ##### Human Readable Output
+
 ##### Alert created:
+
 |ID|Title|Description|IncidentID|Severity|Status|Category|MachineID|
 |---|---|---|---|---|---|---|---|
 | da637204886635759335_1480542752 | testing alert | test | 18 | Low | New | Backdoor | 4899036531e374137f63289c3267bad772c13fef |
 
 
 ### 11. microsoft-atp-get-alert-related-user
+
 ---
 Retrieves the user associated with a specific alert.
 
 ##### Required Permissions
+
 User.Read.All	
 
 ##### Base Command
 
 `microsoft-atp-get-alert-related-user`
+
 ##### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -1251,10 +1422,12 @@ User.Read.All
 
 
 ##### Command Example
+
 ```!microsoft-atp-get-alert-related-user id=da637175364995825348_1865170845```
 
 ##### Context Example
-```
+
+```json
 {
     "MicrosoftATP.AlertUser": {
         "User": {
@@ -1277,22 +1450,27 @@ User.Read.All
 ```
 
 ##### Human Readable Output
+
 ##### Alert Related User:
+
 |AccountDomain|AccountName|AccountSID|DomainAdmin|FirstSeen|ID|LastSeen|LeastPrevalentMachineID|LogonCount|MostPrevalentMachineID|NetworkUser|
 |---|---|---|---|---|---|---|---|---|---|---|
 | desktop-s2455r8 | demisto | S-1-5-21-4197691174-1403503641-4006700887-1001 | false | 2020-02-23T07:14:42Z | desktop-s2455r8\demisto | 2020-03-03T12:32:51Z | 4899036531e374137f63289c3267bad772c13fef | 1 | 4899036531e374137f63289c3267bad772c13fef | false |
 
 
 ### 12. microsoft-atp-get-alert-related-files
+
 ---
 Retrieves the files associated to a specific alert.
 
 ##### Required Permissions
+
 File.Read.All	
 
 ##### Base Command
 
 `microsoft-atp-get-alert-related-files`
+
 ##### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -1326,10 +1504,12 @@ File.Read.All
 
 
 ##### Command Example
+
 ```!microsoft-atp-get-alert-related-files id=da637175364995825348_1865170845```
 
 ##### Context Example
-```
+
+```json
 {
     "MicrosoftATP.AlertFile": {
         "Files": [
@@ -1370,7 +1550,9 @@ File.Read.All
 ```
 
 ##### Human Readable Output
+
 ##### Alert da637175364995825348_1865170845 Related Files:
+
 |Sha1|Sha256|SizeInBytes|
 |---|---|---|
 | d487580502354c61808c7180d1a336beb7ad4624 | f1d62648ef915d85cb4fc140359e925395d315c70f3566b63bb3e21151cb2ce3 | 181248 |
@@ -1378,15 +1560,18 @@ File.Read.All
 
 
 ### 13. microsoft-atp-get-alert-related-ips
+
 ---
 Retrieves the IP addresses associated to a specific alert.
 
 ##### Required Permissions
+
 Ip.Read.All	
 
 ##### Base Command
 
 `microsoft-atp-get-alert-related-ips`
+
 ##### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -1405,10 +1590,12 @@ Ip.Read.All
 
 
 ##### Command Example
+
 ```!microsoft-atp-get-alert-related-ips id=da637200417169017725_183736971 limit=3 offset=0```
 
 ##### Context Example
-```
+
+```json
 {
     "MicrosoftATP.AlertIP": {
         "IPs": [], 
@@ -1418,19 +1605,23 @@ Ip.Read.All
 ```
 
 ##### Human Readable Output
+
 Alert da637200417169017725_183736971 Related IPs: []
 
 
 ### 14. microsoft-atp-get-alert-related-domains
+
 ---
 Retrieves the domains associated with a specific alert.
 
 ##### Required Permissions
+
 URL.Read.All	
 
 ##### Base Command
 
 `microsoft-atp-get-alert-related-domains`
+
 ##### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -1449,10 +1640,12 @@ URL.Read.All
 
 
 ##### Command Example
+
 ```!microsoft-atp-get-alert-related-domains id=da637175364995825348_1865170845 limit=2 offset=0```
 
 ##### Context Example
-```
+
+```json
 {
     "MicrosoftATP.AlertDomain": {
         "Domains": [], 
@@ -1462,20 +1655,24 @@ URL.Read.All
 ```
 
 ##### Human Readable Output
+
 Alert da637175364995825348_1865170845 Related Domains: []
 
 
 ### 15. microsoft-atp-list-machine-actions-details
+
 ---
 Returns the machine's actions. If an action ID is set it returns the information on the specific action.
 Filtering can only be done on a single argument.
 
 ##### Required Permissions
+
 Machine.ReadWrite.All
 
 #### Base Command
 
 `microsoft-atp-list-machine-actions-details`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -1505,8 +1702,11 @@ Machine.ReadWrite.All
 | MicrosoftATP.MachineAction.RelatedFileInfo.FileIdentifierType | String | The type of the file identifier. Possible values: "SHA1" ,"SHA256", and "MD5". | 
 
 #### Command example
+
 ```!microsoft-atp-list-machine-actions-details machine_id="f70f9fe6,48990365" type=RunAntiVirusScan status=Succeeded```
+
 #### Context Example
+
 ```json
 {
     "MicrosoftATP": {
@@ -1551,6 +1751,7 @@ Machine.ReadWrite.All
 #### Human Readable Output
 
 >### Machine actions Info:
+>
 >|ID|Type|Requestor|RequestorComment|Status|MachineID|ComputerDNSName|
 >|---|---|---|---|---|---|---|
 >| 98cf0adc | RunAntiVirusScan | 2f48b784-5da5-4e61-9957-012d2630f1e4 | test3 | Succeeded | f70f9fe6 | desktop-s9 |
@@ -1558,15 +1759,18 @@ Machine.ReadWrite.All
 
 
 ### 16. microsoft-atp-collect-investigation-package
+
 ---
 Collects an investigation package from a machine.
 
 ##### Required Permissions
+
 Machine.CollectForensics
 
 ##### Base Command
 
 `microsoft-atp-collect-investigation-package`
+
 ##### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -1594,10 +1798,12 @@ Machine.CollectForensics
 
 
 ##### Command Example
+
 ```!microsoft-atp-collect-investigation-package comment="testing" machine_id=f70f9fe6b29cd9511652434919c6530618f06606```
 
 ##### Context Example
-```
+
+```json
 {
     "MicrosoftATP.MachineAction": {
         "Status": "Pending", 
@@ -1619,22 +1825,27 @@ Machine.CollectForensics
 ```
 
 ##### Human Readable Output
+
 ##### Initiating collect investigation package from f70f9fe6b29cd9511652434919c6530618f06606 machine :
+
 |ID|Type|Requestor|RequestorComment|Status|MachineID|
 |---|---|---|---|---|---|
 | fa952f94-d672-47a6-a637-70b91339c079 | CollectInvestigationPackage | 2f48b784-5da5-4e61-9957-012d2630f1e4 | testing | Pending | f70f9fe6b29cd9511652434919c6530618f06606 |
 
 
 ### 17. microsoft-atp-get-investigation-package-sas-uri
+
 ---
 Gets a URI that allows downloading of an investigation package.
 
 ##### Required Permissions
+
 Machine.CollectForensics
 
 ##### Base Command
 
 `microsoft-atp-get-investigation-package-sas-uri`
+
 ##### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -1650,10 +1861,12 @@ Machine.CollectForensics
 
 
 ##### Command Example
+
 ```!microsoft-atp-get-investigation-package-sas-uri action_id=6ae51f8f-68e6-4259-abae-0018fdf2e418```
 
 ##### Context Example
-```
+
+```json
 {
     "MicrosoftATP.InvestigationURI": {
         "Link": "https://userrequests-us.securitycenter.windows.com:443/safedownload/WDATP_Investigation_Package.zip?token=MIICYwYJKoZIhvcNAQcCoIICV"
@@ -1662,20 +1875,24 @@ Machine.CollectForensics
 ```
 
 ##### Human Readable Output
+
 Success. This link is valid for a very short time and should be used immediately for downloading the package to a local storage: `https:
 //userrequests-us.securitycenter.windows.com:443/safedownload/WDATP_Investigation_Package.zip?token=MIICYwYJKoZIhvcNAQcCoIICV`
 
 
 ### 18. microsoft-atp-restrict-app-execution
+
 ---
 Restricts the execution of all applications on the machine except a predefined set.
 
 ##### Required Permissions
+
 Machine.RestrictExecution
 
 ##### Base Command
 
 `microsoft-atp-restrict-app-execution`
+
 ##### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -1703,10 +1920,12 @@ Machine.RestrictExecution
 
 
 ##### Command Example
+
 ```!microsoft-atp-restrict-app-execution machine_id=f70f9fe6b29cd9511652434919c6530618f06606 comment="test restrict app"```
 
 ##### Context Example
-```
+
+```json
 {
     "MicrosoftATP.MachineAction": {
         "Status": "Pending", 
@@ -1728,22 +1947,27 @@ Machine.RestrictExecution
 ```
 
 ##### Human Readable Output
+
 ##### Initiating Restrict execution of all applications on the machine f70f9fe6b29cd9511652434919c6530618f06606 except a predefined set:
+
 |ID|Type|Requestor|RequestorComment|Status|MachineID|
 |---|---|---|---|---|---|
 | 264c80f0-1452-43fb-92d0-5515dd0b821e | RestrictCodeExecution | 2f48b784-5da5-4e61-9957-012d2630f1e4 | test restrict app | Pending | f70f9fe6b29cd9511652434919c6530618f06606 |
 
 
 ### 19. microsoft-atp-remove-app-restriction
+
 ---
 Enables the execution of any application on the machine.
 
 ##### Required Permissions
+
 Machine.RestrictExecution
 
 ##### Base Command
 
 `microsoft-atp-remove-app-restriction`
+
 ##### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -1771,10 +1995,12 @@ Machine.RestrictExecution
 
 
 ##### Command Example
+
 ```!microsoft-atp-remove-app-restriction machine_id=f70f9fe6b29cd9511652434919c6530618f06606 comment="testing remove restriction"```
 
 ##### Context Example
-```
+
+```json
 {
     "MicrosoftATP.MachineAction": {
         "Status": "Pending", 
@@ -1796,22 +2022,27 @@ Machine.RestrictExecution
 ```
 
 ##### Human Readable Output
+
 ##### Removing applications restriction on the machine f70f9fe6b29cd9511652434919c6530618f06606:
+
 |ID|Type|Requestor|RequestorComment|Status|MachineID|
 |---|---|---|---|---|---|
 | 5e3cc0b8-b1a1-4a07-92bf-4d63ecec1b18 | UnrestrictCodeExecution | 2f48b784-5da5-4e61-9957-012d2630f1e4 | testing remove restriction | Pending | f70f9fe6b29cd9511652434919c6530618f06606 |
 
 
 ### 20. microsoft-atp-stop-and-quarantine-file
+
 ---
 Stops the execution of a file on a machine and deletes it.
 
 ##### Required Permissions
+
 Machine.StopAndQuarantine	
 
 ##### Base Command
 
 `microsoft-atp-stop-and-quarantine-file`
+
 ##### Input
 
 | **Argument Name** | **Description**                                                                                                                          | **Required** |
@@ -1840,40 +2071,51 @@ Machine.StopAndQuarantine
 
 
 ##### Command Example
+
 ```!microsoft-atp-stop-and-quarantine-file comment="testing" file_hash=abe3ba25e5660c23dfe478d577cfacde5795870c machine_id=12345678```
+
 #### Context Example
-```
-{ 'ID': '123',
- 'Type': 'StopAndQuarantineFile',
- 'Scope': None,
- 'Requestor': '123abc',
- 'RequestorComment': 'Test',
- 'Status': 'Pending',
- 'MachineID': '12345678',
- 'ComputerDNSName': None,
- 'CreationDateTimeUtc': '2020-03-20T14:21:49.9097785Z',
- 'LastUpdateTimeUtc': '2020-02-27T12:21:00.4568741Z',
- 'RelatedFileInfo': {'fileIdentifier': '87654321', 'fileIdentifierType': 'Sha1'}
+
+```json
+{ 
+    "ID": "123",
+    "Type": "StopAndQuarantineFile",
+    "Scope": null,
+    "Requestor": "123abc",
+    "RequestorComment": "Test",
+    "Status": "Pending",
+    "MachineID": "12345678",
+    "ComputerDNSName": null,
+    "CreationDateTimeUtc": "2020-03-20T14:21:49.9097785Z",
+    "LastUpdateTimeUtc": "2020-02-27T12:21:00.4568741Z",
+    "RelatedFileInfo": {
+    "fileIdentifier": "87654321", "fileIdentifierType": "Sha1"
+    }
 }
 ```
 
 ##### Human Readable Output
+
 ##### Stopping the execution of a file on 12345678 machine and deleting it:
+
 |ID|Type|Requestor|RequestorComment|Status|MachineID|
 |---|---|---|---|---|---|
 | 123 | StopAndQuarantineFile | 123abc | Test | Pending | 12345678 |
 
 
 ### 21. microsoft-atp-list-investigations
+
 ---
 Retrieves a collection of investigations or retrieves a specific investigation by its ID.
 
 ##### Required Permissions
+
 Alert.ReadWrite.All	
 
 ##### Base Command
 
 `microsoft-atp-list-investigations`
+
 ##### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -1899,10 +2141,12 @@ Alert.ReadWrite.All
 
 
 ##### Command Example
+
 ```!microsoft-atp-list-investigations limit=3 offset=0```
 
 ##### Context Example
-```
+
+```json
 {
     "MicrosoftATP.Investigation": [
         {
@@ -1943,7 +2187,9 @@ Alert.ReadWrite.All
 ```
 
 ##### Human Readable Output
+
 ##### Investigations Info:
+
 |ID|StartTime|EndTime|InvestigationState|MachineID|ComputerDNSName|TriggeringAlertID|
 |---|---|---|---|---|---|---|
 | 10 | 2020-03-17T11:35:17Z |  | PendingApproval | 4899036531e374137f63289c3267bad772c13fef | desktop-s2455r8 | da637200417169017725_183736971 |
@@ -1952,15 +2198,18 @@ Alert.ReadWrite.All
 
 
 ### 22. microsoft-atp-start-investigation
+
 ---
 Starts an automated investigation on a machine.
 
 ##### Required Permissions
+
 Alert.ReadWrite.All	
 
 ##### Base Command
 
 `microsoft-atp-start-investigation`
+
 ##### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -1985,10 +2234,12 @@ Alert.ReadWrite.All
 
 
 ##### Command Example
+
 ```!microsoft-atp-start-investigation comment="testing" machine_id=f70f9fe6b29cd9511652434919c6530618f06606```
 
 ##### Context Example
-```
+
+```json
 {
     "MicrosoftATP.Investigation": {
         "CancelledBy": null, 
@@ -2005,22 +2256,27 @@ Alert.ReadWrite.All
 ```
 
 ##### Human Readable Output
+
 ##### Starting investigation da637205548921456173_375980286 on f70f9fe6b29cd9511652434919c6530618f06606 machine:
+
 |ID|InvestigationState|TriggeringAlertID|
 |---|---|---|
 | da637205548921456173_375980286 | PendingApproval | da637205548921456173_375980286 |
 
 
 ### 23. microsoft-atp-get-domain-statistics
+
 ---
 Retrieves statistics on the given domain.
 
 ##### Required Permissions
+
 URL.Read.All
 	
 ##### Base Command
 
 `microsoft-atp-get-domain-statistics`
+
 ##### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -2039,10 +2295,12 @@ URL.Read.All
 
 
 ##### Command Example
+
 ```!microsoft-atp-get-domain-statistics domain=google.com```
 
 ##### Context Example
-```
+
+```json
 {
     "MicrosoftATP.DomainStatistics": {
         "Domain": "google.com", 
@@ -2057,22 +2315,27 @@ URL.Read.All
 ```
 
 ##### Human Readable Output
+
 ##### Statistics on google.com domain:
+
 |Host|OrgFirstSeen|OrgLastSeen|OrgPrevalence|
 |---|---|---|---|
 | google.com | 2020-02-24T12:50:04Z | 2020-02-24T13:14:54Z | 1 |
 
 
 ### 24. microsoft-atp-get-domain-alerts
+
 ---
 Retrieves a collection of alerts related to a given domain address.
 
 ##### Required Permissions
+
 Alert.ReadWrite.All	
 
 ##### Base Command
 
 `microsoft-atp-get-domain-alerts`
+
 ##### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -2113,10 +2376,12 @@ Alert.ReadWrite.All
 
 
 ##### Command Example
+
 ```!microsoft-atp-get-domain-alerts domain=google.com```
 
 ##### Context Example
-```
+
+```json
 {
     "MicrosoftATP.DomainAlert": {
         "Domain": "google.com", 
@@ -2126,20 +2391,25 @@ Alert.ReadWrite.All
 ```
 
 ##### Human Readable Output
+
 ##### Domain google.com related alerts Info:
+
 **No entries.**
 
 
 ### 25. microsoft-atp-get-domain-machines
+
 ---
 Retrieves a collection of machines that have communicated with a given domain address.
 
 ##### Required Permissions
+
 Machine.ReadWrite.All
 
 ##### Base Command
 
 `microsoft-atp-get-domain-machines`
+
 ##### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -2173,10 +2443,12 @@ Machine.ReadWrite.All
 
 
 ##### Command Example
+
 ```!microsoft-atp-get-domain-machines domain=google.com```
 
 ##### Context Example
-```
+
+```json
 {
     "MicrosoftATP.DomainMachine": {
         "Domain": "google.com", 
@@ -2209,22 +2481,27 @@ Machine.ReadWrite.All
 ```
 
 ##### Human Readable Output
+
 ##### Machines that have communicated with google.com domain:
+
 |ID|ComputerDNSName|OSPlatform|LastIPAddress|LastExternalIPAddress|HealthStatus|RiskScore|ExposureLevel|
 |---|---|---|---|---|---|---|---|
 | 4899036531e374137f63289c3267bad772c13fef | desktop-s2455r8 | Windows10 | 192.168.1.71 | 81.166.99.236 | Active | High | Medium |
 
 
 ### 26. microsoft-atp-get-file-statistics
+
 ---
 Retrieves statistics for the given file.
 
 ##### Required Permissions
+
 File.Read.All	
 
 ##### Base Command
 
 `microsoft-atp-get-file-statistics`
+
 ##### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -2247,10 +2524,12 @@ File.Read.All
 
 
 ##### Command Example
+
 ```!microsoft-atp-get-file-statistics file_hash=9fe3ba25e5660c23dfe478d577cfacde5795870c```
 
 ##### Context Example
-```
+
+```json
 {
     "MicrosoftATP.FileStatistics": {
         "Sha1": "9fe3ba25e5660c23dfe478d577cfacde5795870c", 
@@ -2268,22 +2547,27 @@ File.Read.All
 ```
 
 ##### Human Readable Output
+
 ##### Statistics on 9fe3ba25e5660c23dfe478d577cfacde5795870c file:
+
 |GlobalFirstObserved|GlobalLastObserved|GlobalPrevalence|OrgPrevalence|TopFileNames|
 |---|---|---|---|---|
 | 2019-04-03T04:10:18.1001071Z | 2020-03-23T09:24:54.169574Z | 1355899 | 0 | lsass.exe |
 
 
 ### 27. microsoft-atp-get-file-alerts
+
 ---
 Retrieves a collection of alerts related to a given file hash.
 
 ##### Required Permissions
+
 Alert.ReadWrite.All	
 
 ##### Base Command
 
 `microsoft-atp-get-file-alerts`
+
 ##### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -2324,10 +2608,12 @@ Alert.ReadWrite.All
 
 
 ##### Command Example
+
 ```!microsoft-atp-get-file-alerts file_hash=9fe3ba25e5660c23dfe478d577cfacde5795870c```
 
 ##### Context Example
-```
+
+```json
 {
     "MicrosoftATP.FileAlert": {
         "Sha1": "9fe3ba25e5660c23dfe478d577cfacde5795870c", 
@@ -2390,22 +2676,27 @@ Alert.ReadWrite.All
 ```
 
 ##### Human Readable Output
+
 ##### File 9fe3ba25e5660c23dfe478d577cfacde5795870c related alerts Info:
+
 |ID|Title|Description|IncidentID|Severity|Status|Category|MachineID|
 |---|---|---|---|---|---|---|---|
 | da637200429318902470_-1583197054 | test alert | Created for test | 15 | Medium | New | None | 4899036531e374137f63289c3267bad772c13fef |
 
 
 ### 28. microsoft-atp-get-ip-statistics
+
 ---
 Retrieves statistics for the given IP address.
 
 ##### Required Permissions
+
 Ip.Read.All	
 
 ##### Base Command
 
 `microsoft-atp-get-ip-statistics`
+
 ##### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -2424,10 +2715,12 @@ Ip.Read.All
 
 
 ##### Command Example
+
 ```!microsoft-atp-get-ip-statistics ip=8.8.8.8```
 
 ##### Context Example
-```
+
+```json
 {
     "MicrosoftATP.IPStatistics": {
         "Statistics": {
@@ -2441,22 +2734,27 @@ Ip.Read.All
 ```
 
 ##### Human Readable Output
+
 ##### Statistics on 8.8.8.8 IP:
+
 |OrgFirstSeen|OrgLastSeen|OrgPrevalence|
 |---|---|---|
 | 2020-02-22T12:52:35Z | 2020-03-01T15:19:40Z | 1 |
 
 
 ### 29. microsoft-atp-get-ip-alerts
+
 ---
 Retrieves a collection of alerts related to a given IP address.
 
 ##### Required Permissions
+
 Alert.ReadWrite.All	
 
 ##### Base Command
 
 `microsoft-atp-get-ip-alerts`
+
 ##### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -2497,10 +2795,12 @@ Alert.ReadWrite.All
 
 
 ##### Command Example
+
 ```!microsoft-atp-get-ip-alerts ip=8.8.8.8```
 
 ##### Context Example
-```
+
+```json
 {
     "MicrosoftATP.IPAlert": {
         "Alerts": [], 
@@ -2510,25 +2810,30 @@ Alert.ReadWrite.All
 ```
 
 ##### Human Readable Output
+
 ##### IP 8.8.8.8 related alerts Info:
+
 **No entries.**
 
 
 ### 30. microsoft-atp-get-user-alerts
+
 ---
 Retrieves a collection of alerts related to a given user ID.
 
 ##### Required Permissions
+
 Alert.ReadWrite.All	
 
 ##### Base Command
 
 `microsoft-atp-get-user-alerts`
+
 ##### Input
 
 | **Argument Name** | **Description** | **Required** |
 | --- | --- | --- |
-| username | The user ID. The ID is not the full UPN, but only the username. For example, to retrieve alerts for "user1@test.com" use "user1". | Required | 
+| username | The user ID. The ID is not the full UPN, but only the username. For example, to retrieve alerts for "<user1@test.com>" use "user1". | Required | 
 
 
 ##### Context Output
@@ -2564,10 +2869,12 @@ Alert.ReadWrite.All
 
 
 ##### Command Example
+
 ```!microsoft-atp-get-user-alerts username=demisto```
 
 ##### Context Example
-```
+
+```json
 {
     "MicrosoftATP.UserAlert": {
         "Username": "demisto", 
@@ -2690,27 +2997,32 @@ Alert.ReadWrite.All
 ```
 
 ##### Human Readable Output
+
 ##### User XSOAR related alerts Info:
+
 |ID|Title|Description|IncidentID|Severity|Status|Category|MachineID|
 |---|---|---|---|---|---|---|---|
 | da637175364336494657_410871946 | Suspicious process injection observed | A process abnormally injected code into another process, As a result, unexpected code may be running in the target process memory. Injection is often used to hide malicious code execution within a trusted process. As a result, the target process may exhibit abnormal behaviors such as opening a listening port or connecting to a command and control server. | 7 | Medium | InProgress | DefenseEvasion | 4899036531e374137f63289c3267bad772c13fef |
 
 
 ### 31. microsoft-atp-get-user-machines
+
 ---
 Retrieves a collection of machines related to a given user ID.
 
 ##### Required Permissions
+
 Machine.ReadWrite.All
 
 ##### Base Command
 
 `microsoft-atp-get-user-machines`
+
 ##### Input
 
 | **Argument Name** | **Description** | **Required** |
 | --- | --- | --- |
-| username | The user ID. The ID is not the full UPN, but only the user name. For example, to retrieve machines for "user1@test.com" use "user1". | Required | 
+| username | The user ID. The ID is not the full UPN, but only the user name. For example, to retrieve machines for "<user1@test.com>" use "user1". | Required | 
 
 
 ##### Context Output
@@ -2739,10 +3051,12 @@ Machine.ReadWrite.All
 
 
 ##### Command Example
+
 ```!microsoft-atp-get-user-machines username=demisto```
 
 ##### Context Example
-```
+
+```json
 {
     "MicrosoftATP.UserMachine": {
         "Username": "demisto", 
@@ -2796,7 +3110,9 @@ Machine.ReadWrite.All
 ```
 
 ##### Human Readable Output
+
 ##### Machines that are related to user XSOAR:
+
 |ID|ComputerDNSName|OSPlatform|LastIPAddress|LastExternalIPAddress|HealthStatus|RiskScore|ExposureLevel|
 |---|---|---|---|---|---|---|---|
 | 4899036531e374137f63289c3267bad772c13fef | desktop-s2455r8 | Windows10 | 192.168.1.71 | 81.166.99.236 | Active | High | Medium |
@@ -2804,15 +3120,18 @@ Machine.ReadWrite.All
 
 
 ### 32. microsoft-atp-add-remove-machine-tag
+
 ---
 Adds or removes a tag on a specific machine.
 
 ##### Required Permissions
+
 Machine.ReadWrite.All
 
 ##### Base Command
 
 `microsoft-atp-add-remove-machine-tag`
+
 ##### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -2847,10 +3166,12 @@ Machine.ReadWrite.All
 
 
 ##### Command Example
+
 ```!microsoft-atp-add-remove-machine-tag action=Add machine_id=f70f9fe6b29cd9511652434919c6530618f06606 tag="test add tag"```
 
 ##### Context Example
-```
+
+```json
 {
     "MicrosoftATP.Machine": {
         "OSBuild": 18363, 
@@ -2877,19 +3198,23 @@ Machine.ReadWrite.All
 ```
 
 ##### Human Readable Output
+
 ##### Succeed to Add tag to f70f9fe6b29cd9511652434919c6530618f06606:
+
 |ID|ComputerDNSName|OSPlatform|LastExternalIPAddress|HealthStatus|RiskScore|ExposureLevel|MachineTags|
 |---|---|---|---|---|---|---|---|
 | f70f9fe6b29cd9511652434919c6530618f06606 | desktop-s2455r9 | Windows10 | 81.166.99.236 | Active | Medium | Medium | test add tag, testing123 |
 
 ### microsoft-atp-indicator-list
-***
+
+---
 Deprecated. Use the microsoft-atp-sc-indicator-list command instead. Lists all indicators by the ID that the system creates when the indicator is ingested.
 
 
 #### Base Command
 
 `microsoft-atp-indicator-list`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -2961,10 +3286,12 @@ Deprecated. Use the microsoft-atp-sc-indicator-list command instead. Lists all i
 
 
 #### Command Example
+
 ```!microsoft-atp-indicator-list```
 
 #### Context Example
-```
+
+```json
 {
     "MicrosoftATP": {
         "Indicators": {
@@ -2990,18 +3317,21 @@ Deprecated. Use the microsoft-atp-sc-indicator-list command instead. Lists all i
 #### Human Readable Output
 
 >### Indicators from Microsoft ATP:
+>
 >|id|action|severity|domainName|
 >|---|---|---|---|
 >| 16 | block | 2 | jacoviya.net |
 
 ### microsoft-atp-indicator-get-by-id
-***
+
+---
 Deprecated. Use the microsoft-atp-sc-indicator-get-by-id command instead. Gets an indicator by its ID.
 
 
 #### Base Command
 
 `microsoft-atp-indicator-get-by-id`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -3071,10 +3401,12 @@ Deprecated. Use the microsoft-atp-sc-indicator-get-by-id command instead. Gets a
 | MicrosoftATP.Indicators.vendorInformation | String | Information about the vendor. | 
 
 #### Command Example
+
 ```!microsoft-atp-indicator-get-by-id indicator_id=17```
 
 #### Context Example
-```
+
+```json
 {
     "MicrosoftATP": {
         "Indicators": {
@@ -3100,19 +3432,22 @@ Deprecated. Use the microsoft-atp-sc-indicator-get-by-id command instead. Gets a
 #### Human Readable Output
 
 >### Indicators from Microsoft ATP:
+>
 >|id|action|severity|domainName|
 >|---|---|---|---|
 >| 17 | block | 2 | example.com |
 
 
 ### microsoft-atp-indicator-create-network
-***
+
+---
 Deprecated. Use the microsoft-atp-sc-indicator-create command instead. Creates a network indicator.
 
 
 #### Base Command
 
 `microsoft-atp-indicator-create-network`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -3207,10 +3542,12 @@ Deprecated. Use the microsoft-atp-sc-indicator-create command instead. Creates a
 | MicrosoftATP.Indicators.vendorInformation | String | Information about the vendor. | 
 
 #### Command Example
+
 ```!microsoft-atp-indicator-create-network action=unknown description="A description!" expiration_time="7 days" threat_type=CryptoMining domain_name="example.com"```
 
 #### Context Example
-```
+
+```json
 {
     "MicrosoftATP": {
         "Indicators": {
@@ -3236,18 +3573,21 @@ Deprecated. Use the microsoft-atp-sc-indicator-create command instead. Creates a
 #### Human Readable Output
 
 >### Indicator 17 was successfully created:
+>
 >|id|action|severity|domainName|
 >|---|---|---|---|
 >| 17 | block | 2 | example.com |
 
 ### microsoft-atp-indicator-create-file
-***
+
+---
 Deprecated. Use the microsoft-atp-sc-indicator-create command instead. Creates a file indicator
 
 
 #### Base Command
 
 `microsoft-atp-indicator-create-file`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -3334,10 +3674,12 @@ Deprecated. Use the microsoft-atp-sc-indicator-create command instead. Creates a
 | MicrosoftATP.Indicators.vendorInformation | String | Information about the vendor. | 
 
 #### Command Example
+
 ```!microsoft-atp-indicator-create-file action=allow description="A description" expiration_time="3 days" threat_type=Darknet confidence=23 file_hash_type=sha256 file_hash_value=50d858e0985ecc7f60418aaf0cc5ab587f42c2570a884095a9e8ccacd0f6545c```
 
 #### Context Example
-```
+
+```json
 {
     "MicrosoftATP": {
         "Indicators": {
@@ -3364,18 +3706,21 @@ Deprecated. Use the microsoft-atp-sc-indicator-create command instead. Creates a
 #### Human Readable Output
 
 >### Indicator 18 was successfully created:
+>
 >|id|action|severity|fileHashType|fileHashValue|
 >|---|---|---|---|---|
 >| 18 | allow | 2 | sha256 | 50d858e0985ecc7f60418aaf0cc5ab587f42c2570a884095a9e8ccacd0f6545c |
 
 ### microsoft-atp-indicator-update
-***
+
+---
 Deprecated. Use the microsoft-atp-sc-indicator-update command instead. Updates the specified indicator.
 
 
 #### Base Command
 
 `microsoft-atp-indicator-update`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -3448,10 +3793,12 @@ Deprecated. Use the microsoft-atp-sc-indicator-update command instead. Updates t
 | MicrosoftATP.Indicators.vendorInformation | String | Information about the vendor. | 
 
 #### Command Example
+
 ```!microsoft-atp-indicator-update expiration_time="2 days" indicator_id=18```
 
 #### Context Example
-```
+
+```json
 {
     "MicrosoftATP": {
         "Indicators": {
@@ -3478,19 +3825,22 @@ Deprecated. Use the microsoft-atp-sc-indicator-update command instead. Updates t
 #### Human Readable Output
 
 >### Indicator ID: 18 was updated successfully.
+>
 >|action|azureTenantId|description|expirationDateTime|fileHashType|fileHashValue|id|ingestedDateTime|isActive|severity|targetProduct|
 >|---|---|---|---|---|---|---|---|---|---|---|
 >| allow | TENANT-ID | Title: Indicator 50d858e0985ecc7f60418aaf0cc5ab587f42c2570a884095a9e8ccacd0f6545c of type FileSha256, Description: A description | 2020-08-28T17:21:15Z | sha256 | 50d858e0985ecc7f60418aaf0cc5ab587f42c2570a884095a9e8ccacd0f6545c | 18 | 2020-08-26T17:18:03.5249643Z | true | 0 | Microsoft Defender ATP |
 
 
 ### microsoft-atp-indicator-delete
-***
+
+---
 Deprecated. Use the microsoft-atp-sc-indicator-delete command instead. Deletes the specified indicator.
 
 
 #### Base Command
 
 `microsoft-atp-indicator-delete`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -3503,27 +3853,39 @@ Deprecated. Use the microsoft-atp-sc-indicator-delete command instead. Deletes t
 There is no context output for this command.
 
 #### Command Example
+
 ```!microsoft-atp-indicator-delete indicator_id=18```
 
 
 #### Human Readable Output
 
 >Indicator ID: 18 was successfully deleted
+
 ### microsoft-atp-sc-indicator-list
-***
+
+---
 Lists all indicators by the ID that the system creates when the indicator is ingested.
 
 ### Permissions
+
 `Ti.ReadWrite`
+
+##### Note
+To ensure that the application is accessible to all indicators, the 'Ti.ReadWrite.All' permission must be granted. Without this permission, the application will only be accessible to the indicators it has created.
 
 #### Base Command
 
 `microsoft-atp-sc-indicator-list`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
 | --- | --- | --- |
-| limit | The maximum number of indicators to return. Default is 50. | Optional | 
+| limit | The maximum number of indicators to return. Default is 50. | Optional |
+| skip | The number of indicators that are to be skipped and not included in the result. | Optional |
+| indicator_value | The value of the indicator to get. | Optional |
+| indicator_title | The title of the indicator to get. | Optional |
+| indicator_type | The type of the indicator to get. | Optional |
 
 
 #### Context Output
@@ -3564,9 +3926,11 @@ Lists all indicators by the ID that the system creates when the indicator is ing
 
 
 #### Command Example
+
 ```!microsoft-atp-sc-indicator-list limit=2```
 
 #### Context Example
+
 ```json
 {
     "DBotScore": [
@@ -3637,21 +4001,25 @@ Lists all indicators by the ID that the system creates when the indicator is ing
 #### Human Readable Output
 
 >### Results found in Microsoft Defender ATP SC for value: 5.5.5.5
+>
 >|id|action|indicatorValue|indicatorType|severity|title|description|
 >|---|---|---|---|---|---|---|
 >| 5141 | Allowed | 5.5.5.5 | IpAddress | Low | title | description |
 
 ### microsoft-atp-sc-indicator-update
-***
+
+---
 Updates the specified indicator.
 
 ### Permissions
+
 `Ti.ReadWrite`
 
 
 #### Base Command
 
 `microsoft-atp-sc-indicator-update`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -3706,9 +4074,11 @@ Updates the specified indicator.
 
 
 #### Command Example
+
 ```!microsoft-atp-sc-indicator-update action=Allowed indicator_description=test indicator_title=title indicator_type=IpAddress indicator_value=2.2.2.2 expiration_time="1 day" severity=Low```
 
 #### Context Example
+
 ```json
 {
     "DBotScore": {
@@ -3751,21 +4121,25 @@ Updates the specified indicator.
 #### Human Readable Output
 
 >### Indicator 2.2.2.2 was updated successfully.
+>
 >|id|action|indicatorValue|indicatorType|severity|title|description|
 >|---|---|---|---|---|---|---|
 >| 5143 | Allowed | 2.2.2.2 | IpAddress | Low | title | test |
 
 ### microsoft-atp-sc-indicator-get-by-id
-***
+
+---
 Gets an indicator by its ID.
 
 
 ### Permissions
+
 `Ti.ReadWrite`
 
 #### Base Command
 
 `microsoft-atp-sc-indicator-get-by-id`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -3811,9 +4185,11 @@ Gets an indicator by its ID.
 
 
 #### Command Example
+
 ```!microsoft-atp-sc-indicator-get-by-id indicator_id=5142```
 
 #### Context Example
+
 ```json
 {
     "DBotScore": {
@@ -3867,20 +4243,24 @@ Gets an indicator by its ID.
 #### Human Readable Output
 
 >### Results found in Microsoft Defender ATP SC for value: 1.1.1.1
+>
 >|id|action|indicatorValue|indicatorType|severity|title|description|
 >|---|---|---|---|---|---|---|
 >| 5142 | Allowed | 1.1.1.1 | IpAddress | Low | title | description |
 
 ### microsoft-atp-sc-indicator-delete
-***
+
+---
 Deletes the specified indicator.
 
 ### Permissions
+
 `Ti.ReadWrite`
 
 #### Base Command
 
 `microsoft-atp-sc-indicator-delete`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -3893,21 +4273,26 @@ Deletes the specified indicator.
 There is no context output for this command.
 
 #### Command Example
+
 ```!microsoft-atp-sc-indicator-delete indicator_id=5142```
 
 #### Human Readable Output
 
 >Indicator ID: 5142 was successfully deleted
+>
 ### microsoft-atp-sc-indicator-create
-***
+
+---
 Creates a new indicator.
 
 ### Permissions
+
 `Ti.ReadWrite`
 
 #### Base Command
 
 `microsoft-atp-sc-indicator-create`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -3962,9 +4347,11 @@ Creates a new indicator.
 
 
 #### Command Example
+
 ```!microsoft-atp-sc-indicator-create action=Allowed indicator_description=test indicator_title=title indicator_type=IpAddress indicator_value=2.2.2.2 expiration_time="1 day" severity=Informational```
 
 #### Context Example
+
 ```json
 {
     "DBotScore": {
@@ -4005,20 +4392,24 @@ Creates a new indicator.
 #### Human Readable Output
 
 >### Indicator 2.2.2.2 was updated successfully.
+>
 >|id|action|indicatorValue|indicatorType|severity|title|description|
 >|---|---|---|---|---|---|---|
 >| 5143 | Allowed | 2.2.2.2 | IpAddress | Informational | title | test |
 
 ### microsoft-atp-list-machines-by-vulnerability
-***
+
+---
 Retrieves a list of machines affected by a vulnerability.
 
 ##### Required Permissions
+
 Vulnerability.Read.All
 
 #### Base Command
 
 `microsoft-atp-list-machines-by-vulnerability`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -4037,8 +4428,11 @@ Vulnerability.Read.All
 | MicrosoftATP.CveMachine.CVE | Unknown | The given CVE IDs related to this machine. | 
 
 #### Command example
+
 ```!microsoft-atp-list-machines-by-vulnerability cve_id=CVE-2021-32810,CVE-2020-12321```
+
 #### Context Example
+
 ```json
 {
     "MicrosoftATP": {
@@ -4065,21 +4459,25 @@ Vulnerability.Read.All
 #### Human Readable Output
 
 >### Microsoft Defender ATP machines by vulnerabilities: ['CVE-2021-32810', 'CVE-2020-12321']
+>
 >|ID|ComputerDNSName|OSPlatform|RBACGroupID|CVE|
 >|---|---|---|---|---|
 >| f3bba49a | ec2amaz | WindowsServer2016 | 0 | CVE-2021-32810,CVE-2020-12321|
 >| 48a62a74 | msde-agent-host-centos7 | Linux | 0 | CVE-2020-12321|
 
 ### microsoft-atp-get-file-info
-***
+
+---
 Retrieves file information by a file hash (SHA1 or SHA256).
 
 ##### Required Permissions
+
 File.Read.All
 
 #### Base Command
 
 `microsoft-atp-get-file-info`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -4114,8 +4512,11 @@ File.Read.All
 | File.Size | Number | The file size. | 
 
 #### Command example
+
 ```!microsoft-atp-get-file-info hash="3395856ce81,db79e9e669c"```
+
 #### Context Example
+
 ```json
 {
     "File": [
@@ -4165,6 +4566,7 @@ File.Read.All
 #### Human Readable Output
 
 >### Microsoft Defender ATP file info by hashes: ['3395856ce81', 'db79e9e669c']
+>
 >|Sha1|Sha256|Size|
 >|---|---|---|
 >| 3395856ce81 | 275a021bbfb648 | 68 |
@@ -4172,16 +4574,19 @@ File.Read.All
 
 
 ### endpoint
-***
+
+---
 Gets machines that have communicated with Microsoft Defender for Endpoint cloud. At least one of the following arguments is required ip, hostanme ot id. Otherwise, an error appears.
 
 ##### Required Permissions
+
 Machine.Read.All
 Machine.ReadWrite.All
 
 #### Base Command
 
 `endpoint`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -4228,8 +4633,11 @@ Machine.ReadWrite.All
 | MicrosoftATP.Machine.AgentVersion | String | The machine Agent version. | 
 
 #### Command example
+
 ```!endpoint id="f3bba49a,48a62a74"ip=1.2.3.4 hostname="ec2amaz-ua9hieu"```
+
 #### Context Example
+
 ```json
 {
     "Endpoint": [
@@ -4371,30 +4779,37 @@ Machine.ReadWrite.All
 #### Human Readable Output
 
 >### Microsoft Defender ATP Machine:
+>
 >|ID|ComputerDNSName|OSPlatform|LastIPAddress|LastExternalIPAddress|HealthStatus|RiskScore|ExposureLevel|
 >|---|---|---|---|---|---|---|---|
 >| f3bba49a | ec2amaz-ua9hieu | WindowsServer2016 | 1.2.3.4 | 127.0.0.1 | Active | None | High |
 
 
 ### microsoft-atp-indicator-batch-update
-***
+
+---
 Updates batch of indicator. If an indicator does not exist, a new indicator will be created.
 
 ##### Required Permissions
+
 Ti.ReadWrite
 Ti.ReadWrite.All
 
 ##### Limitations
+
 1. Rate limitations for this API are 30 calls per minute.
 2. There is a limit of 15,000 active indicators per tenant.
 3. Maximum batch size for one API call is 500.
 
 ##### Note
+
 Please read [here](https://docs.microsoft.com/en-us/microsoft-365/security/defender-endpoint/ti-indicator?view=o365-worldwide) about the Microsoft Defender for Endpoint indicator resource type.
 We suggest using the [TransformIndicatorToMSDefenderIOC automation](https://github.com/demisto/content/blob/e19817f3271b35333aadfe12f3700ec1c5d6eadc/Packs/MicrosoftDefenderAdvancedThreatProtection/Scripts/README.md) to load the XSOAR IOCs to MSDE indicator format.
+
 #### Base Command
 
 `microsoft-atp-indicator-batch-update`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -4412,8 +4827,11 @@ We suggest using the [TransformIndicatorToMSDefenderIOC automation](https://gith
 | MicrosoftATP.Indicators.IsFailed | Boolean | Whether the update failed. | 
 
 #### Command example
+
 ```!microsoft-atp-indicator-batch-update indicator_batch=`[{"indicatorValue": "220e7d15b011d7fac48f2bd61114db1022197f7f","indicatorType": "FileSha1","title": "demo","application": "demo-test", "action": "Alert","severity": "Informational","description": "demo2","recommendedActions": "nothing","rbacGroupNames": ["group1", "group2"]},{"indicatorValue": "2233223322332233223322332233223322332233223322332233223322332222","indicatorType": "FileSha256","title": "demo2","application": "demo-test2","action": "Alert","severity": "Medium","description": "demo2","recommendedActions": "nothing","rbacGroupNames": []}]````
+
 #### Context Example
+
 ```json
 {
     "MicrosoftATP": {
@@ -4438,6 +4856,7 @@ We suggest using the [TransformIndicatorToMSDefenderIOC automation](https://gith
 #### Human Readable Output
 
 >### Indicators updated successfully.
+>
 >|ID|Value|IsFailed|
 >|---|---|---|
 >| 5217 | 220e7d15b011d7fac48f2bd61114db1022197f7f | false |
@@ -4445,15 +4864,18 @@ We suggest using the [TransformIndicatorToMSDefenderIOC automation](https://gith
 
 
 ### microsoft-atp-get-alert-by-id
-***
+
+---
 Retrieves specific alert by the given alert ID. 
 
 ##### Required Permissions
+
 Alert.ReadWrite.All	
 
 #### Base Command
 
 `microsoft-atp-get-alert-by-id`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -4498,8 +4920,11 @@ Alert.ReadWrite.All
 | MicrosoftATP.Alert.RBACGroupName | String | The device RBAC group name. | 
 
 #### Command example
+
 ```!microsoft-atp-get-alert-by-id alert_ids=da637797972607470400_795854214,da637750706361180181_-1167994114```
+
 #### Context Example
+
 ```json
 {
     "MicrosoftATP": {
@@ -4586,19 +5011,22 @@ Alert.ReadWrite.All
 #### Human Readable Output
 
 >### Microsoft Defender ATP Alerts Info for IDs ['da637797972607470400_795854214', 'da637750706361180181_-1167994114']:
+>
 >|ID|Title|Description|IncidentID|Severity|Status|Classification|Category|MachineID|
 >|---|---|---|---|---|---|---|---|---|
 >| da637797972607470400_795854214 | Automated investigation started manually | MS Graph ATP (Application Id: 1281a70f-8ffb-4b3c-bc82-eef2a44dbb2a) initiated an Automated investigation on msde-agent-host-win2016-dc.msde.lab.demisto.<br/>The investigation automatically identifies and reviews threat artifacts for possible remediation.<br/><br/>Details: testing | 645 | Informational | Resolved |  | SuspiciousActivity | 96444b946be252d1f4550354edef5fdc23aca2c5 |
 >| da637750706361180181_-1167994114 | Automated investigation started manually | MS Graph ATP (Application Id: 1281a70f-8ffb-4b3c-bc82-eef2a44dbb2a) initiated an Automated investigation on desktop-s2455r8.<br/>The investigation automatically identifies and reviews threat artifacts for possible remediation.<br/><br/>Details: testing | 510 | Informational | Resolved | TruePositive | SuspiciousActivity | 4899036531e374137f63289c3267bad772c13fef |
 
 ### microsoft-atp-live-response-put-file
-***
+
+---
 Puts a file from the library to the device. Files are saved in a working folder and are deleted when the device restarts by default.
 
 
 #### Base Command
 
 `microsoft-atp-live-response-put-file`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -4642,8 +5070,11 @@ Puts a file from the library to the device. Files are saved in a working folder 
 | MicrosoftATP.LiveResponseAction.troubleshootInfo | String | The machine action troubleshootInfo. | 
 
 #### Command example
+
 ```!microsoft-atp-live-response-put-file machine_id="4899036531e374137f63289c3267bad772c13fef" comment="testing" file_name="C:\Users\demisto\Desktop\test.txt"```
+
 #### Context Example
+
 ```json
 {
     "MicrosoftATP": {
@@ -4694,18 +5125,21 @@ Puts a file from the library to the device. Files are saved in a working folder 
 #### Human Readable Output
 
 >### Machine Action:
+>
 >|Commands|Creation time|Hostname|Machine Action Id|MachineId|Status|
 >|---|---|---|---|---|---|
 >| {'index': 0, 'startTime': None, 'endTime': None, 'commandStatus': 'Created', 'errors': [], 'command': {'type': 'PutFile', 'params': [{'key': 'FileName', 'value': 'C:\Users\demisto\Desktop\test.txt'}]}} | 2022-02-07T10:32:14.1704612Z | desktop-s2455r8 | 20d1de3f-acef-4715-8bed-a92223c5553c | 4899036531e374137f63289c3267bad772c13fef | Failed |
 
 ### microsoft-atp-live-response-run-script
-***
+
+---
 Runs a script from the library on a device. The Args parameter is passed to your script. Timeouts after 10 minutes.
 
 
 #### Base Command
 
 `microsoft-atp-live-response-run-script`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -4725,14 +5159,17 @@ Runs a script from the library on a device. The Args parameter is passed to your
 | MicrosoftATP.LiveResponseAction.exit_code | String | The script exit code. | 
 | MicrosoftATP.LiveResponseAction.script_output | String | The script outputs. | 
 | MicrosoftATP.LiveResponseAction.script_errors | String | The script errors if found. | 
+
 ### microsoft-atp-live-response-get-file
-***
+
+---
 Collect file from a device. NOTE: Backslashes in path must be escaped.
 
 
 #### Base Command
 
 `microsoft-atp-live-response-get-file`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -4774,14 +5211,17 @@ Collect file from a device. NOTE: Backslashes in path must be escaped.
 | MicrosoftATP.LiveResponseAction.commands.command.params.key | String | The machine action command params key. | 
 | MicrosoftATP.LiveResponseAction.commands.command.params.value | String | The machine action command params value. | 
 | MicrosoftATP.LiveResponseAction.troubleshootInfo | String | The machine action troubleshootInfo. | 
+
 ### microsoft-atp-live-response-result
-***
+
+---
 Gets a result file for a specified action.
 
 
 #### Base Command
 
 `microsoft-atp-live-response-result`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -4797,8 +5237,11 @@ Gets a result file for a specified action.
 | MicrosoftATP.LiveResponseAction | String | The machine action ID. | 
 
 #### Command example
+
 ```!microsoft-atp-live-response-result machine_action_id=11a86b87-12b8-423b-9e8d-9775ab2da78f command_index=0```
+
 #### Context Example
+
 ```json
 {
     "File": {
@@ -4827,14 +5270,17 @@ Gets a result file for a specified action.
 #### Human Readable Output
 
 >file_link: https:<span>//</span>automatedirstrprdeus.blob.core.windows.net/investigation-actions-data/b7df6ab7-5c73-4e13-8cd3-82e1f3d849ed/CustomPlaybookCommandOutput/7ef257a5069c45fe790be86d479d1518?se=2022-02-07T14%3A33%3A07Z&sp=rt&sv=2020-06-12&sr=b&rscd=attachment%3B%20filename%3Doutput_11a86b87-12b8-423b-9e8d-9775ab2da78f_0.json&skoid=34334208-452d-4d6d-afc6-0c319d62a726&sktid=124edf19-b350-4797-aefc-3206115ffdb3&skt=2022-02-07T13%3A48%3A07Z&ske=2022-02-07T14%3A33%3A07Z&sks=b&skv=2020-06-12&sig=IRxMKavzQqHplTsAL350holkkm%2B3NI2mhUUWxaHbOAM%3D
+>
 ### microsoft-atp-advanced-hunting-lateral-movement-evidence
-***
+
+---
 Detects evidence of attempted lateral movement. When you select a “query_purpose” argument, a designated query template is used.
 
 
 #### Base Command
 
 `microsoft-atp-advanced-hunting-lateral-movement-evidence`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -4864,8 +5310,11 @@ Detects evidence of attempted lateral movement. When you select a “query_purpo
 | MicrosoftATP.HuntLateralMovementEvidence.Result.management_connection | String | The query results for management_connection query_purpose. |
 
 #### Command example
+
 ```!microsoft-atp-advanced-hunting-lateral-movement-evidence query_purpose=network_connections device_name=devicename_2,devicename_1 limit=6```
+
 #### Context Example
+
 ```json
 {
     "MicrosoftATP": {
@@ -4889,14 +5338,18 @@ Detects evidence of attempted lateral movement. When you select a “query_purpo
 #### Human Readable Output
 
 >### Lateral Movement Evidence Hunt (network_connections) Results
+>
 >|DeviceName|RemoteIP|RemotePort|TotalConnections|
 >|---|---|---|---|
 >| devicename_2 | ip1 | 54296 | 21 |
 
 
 #### Command example
+
 ```!microsoft-atp-advanced-hunting-lateral-movement-evidence query_purpose=smb_connections device_name=devicename_1```
+
 #### Context Example
+
 ```json
 {
     "MicrosoftATP": {
@@ -4927,6 +5380,7 @@ Detects evidence of attempted lateral movement. When you select a “query_purpo
 #### Human Readable Output
 
 >### Lateral Movement Evidence Hunt (smb_connections) Results
+>
 >|DeviceName|InitiatingProcessCreationTime|InitiatingProcessFileName|InitiatingProcessId|RemoteIPCount|
 >|---|---|---|---|---|
 >| devicename_1 | 2022-03-03T19:43:46.4373311Z | powershell.exe | 5748 | 5 |
@@ -4934,8 +5388,11 @@ Detects evidence of attempted lateral movement. When you select a “query_purpo
 
 
 #### Command example
+
 ```!microsoft-atp-advanced-hunting-lateral-movement-evidence query_purpose="management_connection" device_id="4cceb3c642212014e0e9553aa8b59e999ea515ff" query_operation="or" limit="50" timeout="10"```
+
 #### Context Example
+
 ```json
 {
     "MicrosoftATP": {
@@ -4966,19 +5423,22 @@ Detects evidence of attempted lateral movement. When you select a “query_purpo
 #### Human Readable Output
 
 >### Lateral Movement Evidence Hunt (management_connection) Results
+>
 >|DeviceName|LocalIP|RemoteIP|RemotePort|TotalCount|
 >|---|---|---|---|---|
 >| device_name | ip3 | ip4 | 135 | 41 |
 >| device_name | ip3 | ip3 | 139 | 1 |
 
 ### microsoft-atp-advanced-hunting-persistence-evidence
-***
+
+---
 Detects evidence of persistence. When you select a “query_purpose” argument, a designated query template is used.
 
 
 #### Base Command
 
 `microsoft-atp-advanced-hunting-persistence-evidence`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -5015,16 +5475,22 @@ Detects evidence of persistence. When you select a “query_purpose” argument,
 | MicrosoftATP.HuntPersistenceEvidence.Result.host_file_change | String | The query results for host_file_change query_purpose. |
 
 #### Command example
+
 ```!microsoft-atp-advanced-hunting-persistence-evidence query_purpose=scheduled_job device_name=devicename_2 device_id=4cceb3c642212014e0e9553aa8b59e999ea515ff,96444b946be252d1f4550354edef5fdc23aca2c5 query_operation=or```
+
 #### Human Readable Output
 
 >### Persistence EvidenceHunt Hunt (scheduled_job) Results
+>
 >**No entries.**
 
 
 #### Command example
+
 ```!microsoft-atp-advanced-hunting-persistence-evidence query_purpose=new_service_created  file_name=installer,services```
+
 #### Context Example
+
 ```json
 {
     "MicrosoftATP": {
@@ -5065,6 +5531,7 @@ Detects evidence of persistence. When you select a “query_purpose” argument,
 #### Human Readable Output
 
 >### Persistence EvidenceHunt Hunt (new_service_created) Results
+>
 >|DeviceName|InitiatingProcessCommandLine|InitiatingProcessFileName|InitiatingProcessVersionInfoOriginalFileName|InitiatingProcessVersionInfoProductName|RegistryKey|RegistryValueType|Timestamp|
 >|---|---|---|---|---|---|---|---|
 >| devicename_2 | services.exe | services.exe | services.exe | Microsoft® Windows® Operating System | HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Services\MpKsl49022091 | None | 2022-03-12T00:45:51.2745622Z |
@@ -5072,8 +5539,11 @@ Detects evidence of persistence. When you select a “query_purpose” argument,
 
 
 #### Command example
+
 ```!microsoft-atp-advanced-hunting-persistence-evidence query_purpose=new_user device_name=desktop```
+
 #### Context Example
+
 ```json
 {
     "MicrosoftATP": {
@@ -5099,14 +5569,18 @@ Detects evidence of persistence. When you select a “query_purpose” argument,
 #### Human Readable Output
 
 >### Persistence EvidenceHunt Hunt (new_user) Results
+>
 >|AccountDomain|AccountName|AccountSid|DeviceName|InitiatingProcessAccountName|InitiatingProcessLogonId|Timestamp|
 >|---|---|---|---|---|---|---|
 >| devicename_1 | delete_me | accound-sid | devicename_1 | demisto | 74706995 | 2022-03-03T21:25:52.4538765Z |
 
 
 #### Command example
+
 ```!microsoft-atp-advanced-hunting-persistence-evidence query_purpose=new_group device_id=deviceid device_name=desktop  query_operation=and```
+
 #### Context Example
+
 ```json
 {
     "MicrosoftATP": {
@@ -5133,14 +5607,18 @@ Detects evidence of persistence. When you select a “query_purpose” argument,
 #### Human Readable Output
 
 >### Persistence EvidenceHunt Hunt (new_group) Results
+>
 >|AdditionalFields|DeviceName|InitiatingProcessAccountName|InitiatingProcessLogonId|Timestamp|
 >|---|---|---|---|---|
 >| {"GroupName":"Test_group_delete","GroupDomainName":"devicename_1","GroupSid":"S-1-5-21-4197691174-1403503641-4006700887-1006"} | devicename_1 | demisto | 74706995 | 2022-03-03T21:26:30.8791017Z |
 
 
 #### Command example
+
 ```!microsoft-atp-advanced-hunting-persistence-evidence query_purpose=group_user_change device_name=desktop```
+
 #### Context Example
+
 ```json
 {
     "MicrosoftATP": {
@@ -5160,34 +5638,43 @@ Detects evidence of persistence. When you select a “query_purpose” argument,
 #### Human Readable Output
 
 >### Persistence EvidenceHunt Hunt (group_user_change) Results
+>
 >|AccountSid|
 >|---|
 >| accound-sid |
 
 
 #### Command example
+
 ```!microsoft-atp-advanced-hunting-persistence-evidence query_purpose=local_firewall_change device_name=desktop```
+
 #### Human Readable Output
 
 >### Persistence EvidenceHunt Hunt (local_firewall_change) Results
+>
 >**No entries.**
 
 
 #### Command example
+
 ```!microsoft-atp-advanced-hunting-persistence-evidence query_purpose=host_file_change device_name=desktop```
+
 #### Human Readable Output
 
 >### Persistence EvidenceHunt Hunt (host_file_change) Results
+>
 >**No entries.**
 
 ### microsoft-atp-advanced-hunting-process-details
-***
+
+---
 Detects process details. When you select a “query_purpose” argument, a designated query template is used.
 
 
 #### Base Command
 
 `microsoft-atp-advanced-hunting-process-details`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -5218,8 +5705,11 @@ Detects process details. When you select a “query_purpose” argument, a desig
 | MicrosoftATP.HuntProcessDetails.Result.process_excecution_powershell | String | The query results for process_excecution_powershell query_purpose. |
 
 #### Command example
+
 ```!microsoft-atp-advanced-hunting-process-details query_purpose=beaconing_evidence file_name=powershell device_name=desktop query_operation=and```
+
 #### Context Example
+
 ```json
 {
     "MicrosoftATP": {
@@ -5272,19 +5762,22 @@ Detects process details. When you select a “query_purpose” argument, a desig
 #### Human Readable Output
 
 >### Process Details Hunt (beaconing_evidence) Results
+>
 >|ActionType|DeviceId|DeviceName|InitiatingProcessFileName|InitiatingProcessMD5|InitiatingProcessSHA1|InitiatingProcessSHA256|LocalIP|LocalIPType|LocalPort|Protocol|RemoteIP|RemoteIPType|RemotePort|RemoteUrl|Timestamp|
 >|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 >| ConnectionSuccess | deviceid_2 | devicename_2 | powershell.exe | md5 | sha1 | sha256 | ip1 | Private | 49169 | Tcp | ip3 | Public | 443 | winatp-gw-eus.microsoft.com | 2022-03-15T20:38:30.5393171Z |
 >| ConnectionSuccess | deviceid | devicename_1 | powershell.exe | md5 | sha1 | sha256 | ip2 | Private | 52110 | Tcp | ip3 | Public | 443 | winatp-gw-eus.microsoft.com | 2022-03-15T15:33:29.0892401Z |
 
 ### microsoft-atp-advanced-hunting-network-connections
-***
+
+---
 Detects network connections. When you select a “query_purpose” argument, a designated query template is used.
 
 
 #### Base Command
 
 `microsoft-atp-advanced-hunting-network-connections`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -5312,8 +5805,11 @@ Detects network connections. When you select a “query_purpose” argument, a d
 | MicrosoftATP.HuntNetworkConnections.Result.encoded_commands | String | The query results for encoded_commands query_purpose. |
 
 #### Command example
+
 ```!microsoft-atp-advanced-hunting-network-connections query_purpose=dns_query device_name=devicename_1,devicename_2```
+
 #### Context Example
+
 ```json
 {
     "MicrosoftATP": {
@@ -5344,19 +5840,22 @@ Detects network connections. When you select a “query_purpose” argument, a d
 #### Human Readable Output
 
 >### Network Connections Hunt (dns_query) Results
+>
 >|ActionType|DeviceName|Packetinfo|RemoteIP|Timestamp|
 >|---|---|---|---|---|
 >| NetworkSignatureInspected | devicename_2 | {"SignatureName":"DNS_Request","SignatureMatchedContent":"h%D4%01%00%00%01%00%00%00%00%00%00%05ctldl%0Dwindowsupdate%03com","SamplePacketContent":"[\"h%D4%01%00%00%01%00%00%00%00%00%00%05ctldl%0Dwindowsupdate%03com%00%00%01%00%01\"]"} | 8.8.8.8 | 2022-03-15T20:01:20.3307099Z |
 >| NetworkSignatureInspected | devicename_2 | {"SignatureName":"DNS_Request","SignatureMatchedContent":"%B0%C5%01%00%00%01%00%00%00%00%00%00%06us-v20%06events%04data%09microsoft%03com","SamplePacketContent":"[\"%B0%C5%01%00%00%01%00%00%00%00%00%00%06us-v20%06events%04data%09microsoft%03com%00%00%01%00%01\"]"} | 8.8.8.8 | 2022-03-15T20:01:20.3327319Z |
 
 ### microsoft-atp-advanced-hunting-cover-up
-***
+
+---
 Detects cover up actions. When you select a “query_purpose” argument, a designated query template is used.
 
 
 #### Base Command
 
 `microsoft-atp-advanced-hunting-cover-up`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -5388,8 +5887,11 @@ Detects cover up actions. When you select a “query_purpose” argument, a desi
 | MicrosoftATP.HuntCoverUp.Result.common_files | String | The query results for common_files query_purpose. |
 
 #### Command example
+
 ```!microsoft-atp-advanced-hunting-cover-up query_purpose=file_deleted  file_name=chrome device_name=desktop query_operation=and```
+
 #### Context Example
+
 ```json
 {
     "MicrosoftATP": {
@@ -5466,6 +5968,7 @@ Detects cover up actions. When you select a “query_purpose” argument, a desi
 #### Human Readable Output
 
 >### Cover Up Hunt (file_deleted) Results
+>
 >|DeviceId|DeviceName|FileName|FolderPath|InitiatingProcessCommandLine|InitiatingProcessFileName|InitiatingProcessVersionInfoProductName|Timestamp|
 >|---|---|---|---|---|---|---|---|
 >| deviceid | devicename_1 | old_chrome_proxy.exe | C:\Program Files\Google\Chrome\Temp\scoped_dir9640_1501542081 | "setup.exe" --rename-chrome-exe --system-level --verbose-logging --channel=stable | setup.exe | Google Chrome Installer | 2022-03-10T09:41:21.9388696Z |
@@ -5477,8 +5980,11 @@ Detects cover up actions. When you select a “query_purpose” argument, a desi
 
 
 #### Command example
+
 ```!microsoft-atp-advanced-hunting-cover-up query_purpose=event_log_cleared device_name=devicename_1```
+
 #### Context Example
+
 ```json
 {
     "MicrosoftATP": {
@@ -5507,14 +6013,18 @@ Detects cover up actions. When you select a “query_purpose” argument, a desi
 #### Human Readable Output
 
 >### Cover Up Hunt (event_log_cleared) Results
+>
 >|ClearedLogList|DeviceId|DeviceName|FileName|InitiatingProcessFileName|LogClearCount|Timestamp|
 >|---|---|---|---|---|---|---|
 >| "wevtutil.exe" clear-log System,<br/>"wevtutil.exe" cl System | deviceid | devicename_1 | wevtutil.exe | powershell.exe | 2 | 2022-03-09T07:15:00Z |
 
 
 #### Command example
+
 ```!microsoft-atp-advanced-hunting-cover-up query_purpose=compromised_information username=demisto```
+
 #### Context Example
+
 ```json
 {
     "MicrosoftATP": {
@@ -5603,6 +6113,7 @@ Detects cover up actions. When you select a “query_purpose” argument, a desi
 #### Human Readable Output
 
 >### Cover Up Hunt (compromised_information) Results
+>
 >|ActionType|DeviceId|DeviceName|InitiatingProcessFileName|Timestamp|
 >|---|---|---|---|---|
 >| LogonSuccess | deviceid | devicename_1 | lsass.exe | 2022-03-16T08:05:44.8315718Z |
@@ -5613,13 +6124,15 @@ Detects cover up actions. When you select a “query_purpose” argument, a desi
 >| LogonFailed | deviceid | devicename_1 |  | 2022-03-16T08:05:36.0887779Z |
 
 ### microsoft-atp-advanced-hunting-file-origin
-***
+
+---
 How did the file get on the machine. Possible details are "dropped_file" - Was the file dropped? From where? "created_file" - Created by another File (script, compiled binary). "network_shared" - Shared via network. "execution_chain" - What is the process execution chain.
 
 
 #### Base Command
 
 `microsoft-atp-advanced-hunting-file-origin`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -5642,14 +6155,17 @@ How did the file get on the machine. Possible details are "dropped_file" - Was t
 | **Path** | **Type** | **Description** |
 | --- | --- | --- |
 | MicrosoftATP.HuntFileOrigin.Result | String | The query results. |
+
 ### microsoft-atp-advanced-hunting-privilege-escalation
-***
+
+---
 Is there evidence for privilege escalation.
 
 
 #### Base Command
 
 `microsoft-atp-advanced-hunting-privilege-escalation`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -5670,13 +6186,15 @@ Is there evidence for privilege escalation.
 | MicrosoftATP.HuntPrivilegeEscalation.Result | String | The query results. |
 
 ### microsoft-atp-advanced-hunting-tampering
-***
+
+---
 Detect if there was any evidence of MSDE agent/sensor manipulation.
 
 
 #### Base Command
 
 `microsoft-atp-advanced-hunting-tampering`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -5689,6 +6207,7 @@ Detect if there was any evidence of MSDE agent/sensor manipulation.
 | timeout | The amount of time (in seconds) that a request waits for the query response before a timeout occurs. Default is 10. | Optional |
 | page | The page number from which to start a search. Default is 1. | Optional |
 | show_query | Show the query as part of the entry result. | Optional |
+
 #### Context Output
 
 | **Path** | **Type** | **Description** |
@@ -5696,13 +6215,15 @@ Detect if there was any evidence of MSDE agent/sensor manipulation.
 | MicrosoftATP.HuntTampering.Result | String | The query results. |
 
 ### microsoft-atp-live-response-cancel-action
-***
+
+---
 Cancels an action with an unfinished status.
 
 
 #### Base Command
 
 `microsoft-atp-live-response-cancel-action`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -5717,15 +6238,18 @@ There is no context output for this command.
 
 
 ### microsoft-atp-get-machine-users
+
 ---
 Retrieves a collection of logged on users on a specific device.
 
 ##### Required Permissions
+
 User.Read.All
 
 #### Base Command
 
 `microsoft-atp-get-machine-users`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -5748,8 +6272,11 @@ User.Read.All
 | MicrosoftATP.MachineUser.MachineID | String | The machine ID. | 
 
 #### Command example
+
 ```!microsoft-atp-get-machine-users machine_id=0a3250e0693a109f1affc9217be9459028aa8424```
+
 #### Context Example
+
 ```json
 {
     "MicrosoftATP": {
@@ -5774,21 +6301,25 @@ User.Read.All
 #### Human Readable Output
 
 >### Microsoft Defender ATP logon users for machine 111e6dd8c833c8a052ea231ec1b19adaf497b625:
+>
 >|ID|AccountName|AccountDomain|FirstSeen|LastSeen|LogonTypes|DomainAdmin|NetworkUser|
 >|---|---|---|---|---|---|---|---|
 >| contoso\\user1 | user1 | contoso | 2019-12-18T08:02:54Z | 2020-01-06T08:01:48Z | Interactive | True | False |
 
 
 ### microsoft-atp-get-machine-alerts
+
 ---
 Retrieves all alerts related to a specific device.
 
 ##### Required Permissions
+
 Alert.ReadWrite.All
 
 #### Base Command
 
 `microsoft-atp-get-machine-alerts`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -5812,8 +6343,11 @@ Alert.ReadWrite.All
 | MicrosoftATP.MachineAlerts.MachineID | String | The alerts machine ID. | 
 
 #### Command example
+
 ```!microsoft-atp-get-machine-alerts machine_id=0a3250e0693a109f1affc9217be9459028aa8424```
+
 #### Context Example
+
 ```json
 {
     "MicrosoftATP": {
@@ -5839,18 +6373,100 @@ Alert.ReadWrite.All
 #### Human Readable Output
 
 >### Alerts that are related to machine 111e6dd8c833c8a052ea231ec1b19adaf497b625:
+>
 >|ID|Title|Description|IncidentID|Severity|Status|Classification|Category|ThreatFamilyName|MachineID|
 >|---|---|---|---|---|---|---|---|---|---|
 >| da637472900382838869_1364969609 | Low-reputation arbitrary code executed by signed executable | Binaries signed by Microsoft can be used to run low-reputation arbitrary code. This technique hides the execution of malicious code within a trusted process. As a result, the trusted process might exhibit suspicious behaviors, such as opening a listening port or connecting to a command-and-control (C&C) server. | 1126093 | Low | New |  | Execution |  | 111e6dd8c833c8a052ea231ec1b19adaf497b625 |
 
+### microsoft-atp-offboard-machine
+
+---
+Offboard a machine from microsoft ATP.
+
+##### Required Permissions
+
+Machine.Offboard	
+
+##### Base Command
+
+`microsoft-atp-offboard-machine`
+
+##### Input
+
+| **Argument Name** | **Description**                                                                                                                                            | **Required** |
+| --- |------------------------------------------------------------------------------------------------------------------------------------------------------------| --- |
+| machine_id | A comma-separated list of machine IDs to be used for offboarding. e.g., 0a3250e0693a109f1affc9217be9459028aa8426,0a3250e0693a109f1affc9217be9459028aa8424. | Required | 
+| comment | A comment to associate with the action.                                                                                                                    | Required |
+
+
+##### Context Output
+
+| **Path** | **Type** | **Description**                                            |
+| --- | --- |------------------------------------------------------------|
+| MicrosoftATP.OffboardMachine.ID | String | The machine action ID.                                     | 
+| MicrosoftATP.OffboardMachine.Type | String | Type of the machine action.                                | 
+| MicrosoftATP.OffboardMachine.Scope | Unknown | Scope of the action.                                       | 
+| MicrosoftATP.OffboardMachine.Requestor | String | The ID of the user that executed the action.               | 
+| MicrosoftATP.OffboardMachine.RequestorComment | String | Comment that was written when issuing the action.          | 
+| MicrosoftATP.OffboardMachine.Status | String | The current status of the command.                         | 
+| MicrosoftATP.OffboardMachine.MachineID | String | The machine ID on which the action was executed.           | 
+| MicrosoftATP.OffboardMachine.ComputerDNSName | String | The machine DNS name on which the action was executed.     | 
+| MicrosoftATP.OffboardMachine.CreationDateTimeUtc | Date | The date and time when the action was created.             | 
+| MicrosoftATP.OffboardMachine.LastUpdateTimeUtc | Date | The last date and time when the action status was updated. | 
+| MicrosoftATP.OffboardMachine.cancellationDateTimeUtc | Date | The date and time when the action was canceled.      |
+| MicrosoftATP.OffboardMachine.RelatedFileInfo | String | The file info.                                             | 
+| MicrosoftATP.OffboardMachine.troubleshootInfo | String | Troubleshooting information.                               |
+
+##### Command example
+
+```!microsoft-atp-offboard-machine comment="Testing Offboarding" machine_id="12342c13fef"```
+
+##### Context Example
+
+```json
+{
+    "MicrosoftATP": {
+        "MachineAction": [
+            {
+              "cancellationDateTimeUtc": null,
+              "computerDnsName": "desktop-s2455r8",
+              "creationDateTimeUtc": "2022-07-12T14:19:55.4872498Z",
+              "id": "947a677a-a11a-4240-ab6q-91277e2386b9",
+              "lastUpdateDateTimeUtc": "2022-07-12T14:19:55.4872521Z",
+              "machineId": null,
+              "relatedFileInfo": null,
+              "requestor": "2f48b784-5da5-4e61-9957-012d2630f1e4",
+              "requestorComment": "Testing Offboarding",
+              "scope": null,
+              "status": "Pending",
+              "troubleshootInfo": null,
+              "type": "Offboard"
+          }
+        ]
+    }
+}
+```
+
+##### Human Readable Output
+
+>##### The offboarding request has been submitted successfully:
+>
+>|ID|Type|Requestor|RequestorComment|Status|MachineID|ComputerDNSName|
+>|---|---|---|---|---|---|---|
+>| 947a677a-a11a-4240-ab6q-91277e2386b9 | Offboard | 2f48b784-5da5-4e61-9957-012d2630f1e4| offboard test | Pending | 12342c13fef | desktop-s2455r8 |
+
+=======
+
 ### microsoft-atp-request-and-download-investigation-package
-***
+
+---
 Collect and download an investigation package as a gz file.
 
 
 #### Base Command
 
 `microsoft-atp-request-and-download-investigation-package`
+
 #### Input
 
 | **Argument Name** | **Description** | **Required** |
@@ -5868,3 +6484,692 @@ Collect and download an investigation package as a gz file.
 | MicrosoftATP.MachineAction.ID | String | The machine action ID. | 
 | MicrosoftATP.MachineAction.Status | String | The current status of the machine action. | 
 | MicrosoftATP.MachineAction.MachineID | String |  The machine ID on which the action was executed. |
+
+
+##### Context Output
+
+| **Path** | **Type** | **Description** |
+| --- | --- | --- |
+| MicrosoftATP.MachineAction.ID | String | The machine action ID. | 
+| MicrosoftATP.MachineAction.Type | String | Type of the machine action. | 
+| MicrosoftATP.MachineAction.Scope | Unknown | Scope of the action. | 
+| MicrosoftATP.MachineAction.Requestor | String | The ID of the user that executed the action. | 
+| MicrosoftATP.MachineAction.RequestorComment | String | Comment that was written when issuing the action. | 
+| MicrosoftATP.MachineAction.Status | String | The current status of the command. | 
+| MicrosoftATP.MachineAction.MachineID | String | The machine ID on which the action was executed. | 
+| MicrosoftATP.MachineAction.ComputerDNSName | String | The machine DNS name on which the action was executed. | 
+| MicrosoftATP.MachineAction.CreationDateTimeUtc | Date | The date and time when the action was created. | 
+| MicrosoftATP.MachineAction.LastUpdateTimeUtc | Date | The last date and time when the action status was updated. | 
+| MicrosoftATP.MachineAction.RelatedFileInfo.FileIdentifier | String | The file identifier. | 
+| MicrosoftATP.MachineAction.RelatedFileInfo.FileIdentifierType | String | The type of the file identifier. Possible values: "SHA1" ,"SHA256", and "MD5". | 
+
+##### Command example
+
+```!microsoft-atp-isolate-machine comment=isolate_test_3 isolation_type=Full machine_id="12342c13fef,12342c13fef8f06606"```
+
+##### Context Example
+
+```json
+{
+    "MicrosoftATP": {
+        "MachineAction": [
+            {
+                "ComputerDNSName": "desktop-s2455r8",
+                "CreationDateTimeUtc": "2022-01-25T14:25:52.6227941Z",
+                "ID": "1f3098e20464",
+                "LastUpdateTimeUtc": null,
+                "MachineID": "12342c13fef",
+                "RelatedFileInfo": {
+                    "FileIdentifier": null,
+                    "FileIdentifierType": null
+                },
+                "Requestor": "2f48b784-5da5-4e61-9957-012d2630f1e4",
+                "RequestorComment": "isolate_test_3",
+                "Scope": "Full",
+                "Status": "Pending",
+                "Type": "Isolate"
+            },
+            {
+                "ComputerDNSName": "desktop-s2455r9",
+                "CreationDateTimeUtc": "2022-01-25T14:25:53.2395007Z",
+                "ID": "6d39a3da0744",
+                "LastUpdateTimeUtc": null,
+                "MachineID": "12342c13fef8f06606",
+                "RelatedFileInfo": {
+                    "FileIdentifier": null,
+                    "FileIdentifierType": null
+                },
+                "Requestor": "2f48b784-5da5-4e61-9957-012d2630f1e4",
+                "RequestorComment": "isolate_test_3",
+                "Scope": "Full",
+                "Status": "Pending",
+                "Type": "Isolate"
+            }
+        ]
+    }
+}
+```
+
+##### Human Readable Output
+
+>##### The isolation request has been submitted successfully:
+>
+>|ID|Type|Requestor|RequestorComment|Status|MachineID|ComputerDNSName|
+>|---|---|---|---|---|---|---|
+>| 1f3098e20464 | Isolate | 2f48b784-5da5-4e61-9957-012d2630f1e4 | isolate_test_3 | Pending | 12342c13fef | desktop-s2455r8 |
+>| 6d39a3da0744 | Isolate | 2f48b784-5da5-4e61-9957-012d2630f1e4 | isolate_test_3 | Pending | 12342c13fef8f06606 | desktop-s2455r9 |
+
+### microsoft-atp-test
+
+---
+Tests connectivity to Microsoft Defender for Endpoint.
+
+
+#### Base Command
+
+`microsoft-atp-test`
+
+#### Input
+
+There are no input arguments for this command.
+
+#### Context Output
+
+There is no context output for this command.
+
+
+### microsoft-atp-list-software
+
+---
+Retrieves the organization software inventory.
+ 
+ 
+#### Base Command
+ 
+`microsoft-atp-list-software`
+
+#### Input
+ 
+| **Argument Name** | **Description** | **Required** |
+| --- | --- | --- |
+| id | Software ID. | Optional |
+| name | Software name. | Optional |
+| vendor | Software publisher name. | Optional |
+| limit | Maximum number of results to retrieve. Default is 50. | Optional |
+| offset | The number of items in the queried collection that are to be skipped and not included in the result. Default is 0. | Optional |
+ 
+ 
+#### Context Output
+ 
+| **Path** | **Type** | **Description** |
+| --- | --- | --- |
+| MicrosoftATP.Software.id | String | Software ID. |
+| MicrosoftATP.Software.name | String | Software name. |
+| MicrosoftATP.Software.vendor | String | Software publisher name. |
+| MicrosoftATP.Software.weaknesses | Number | Number of discovered vulnerabilities. |
+| MicrosoftATP.Software.publicExploit | Boolean | Whether a public exploit exists for some of the vulnerabilities. |
+| MicrosoftATP.Software.activeAlert | Boolean | Whether an active alert is associated with this software. |
+| MicrosoftATP.Software.exposedMachines | Number | Number of exposed devices. |
+| MicrosoftATP.Software.installedMachines | Number | The number of installed machines. |
+| MicrosoftATP.Software.impactScore | Number | Exposure score impact of this software. |
+| MicrosoftATP.Software.isNormalized | Boolean | Whether the software is normalized. |
+| MicrosoftATP.Software.category | String | Software category. |
+| MicrosoftATP.Software.distributions | String | Software distributions. |
+ 
+#### Command example
+
+```!microsoft-atp-list-software id=some_id```
+
+#### Context Example
+
+```json
+{
+   "MicrosoftATP": {
+       "Software": {
+           "activeAlert": false,
+           "category": "",
+           "distributions": [],
+           "exposedMachines": 0,
+           "id": "some_id",
+           "impactScore": 0,
+           "installedMachines": 1,
+           "isNormalized": false,
+           "name": "some_name",
+           "publicExploit": false,
+           "vendor": "some_vendor",
+           "weaknesses": 0
+       }
+   }
+}
+```
+ 
+#### Human Readable Output
+ 
+>### Microsoft Defender ATP list software:
+>
+>|id|name|vendor|weaknesses|activeAlert|exposedMachines|installedMachines|publicExploit|
+>|---|---|---|---|---|---|---|---|
+>| some_id | some_name | some_vendor | 0 | false | 0 | 1 | false |
+ 
+
+
+### microsoft-atp-list-software-version-distribution
+
+---
+Retrieves a list of your organization's software version distribution.
+ 
+ 
+#### Base Command
+ 
+`microsoft-atp-list-software-version-distribution`
+
+#### Input
+ 
+| **Argument Name** | **Description** | **Required** |
+| --- | --- | --- |
+| id | Software ID. Use the !microsoft-atp-list-software command to get the ID. | Optional |
+ 
+ 
+#### Context Output
+ 
+| **Path** | **Type** | **Description** |
+| --- | --- | --- |
+| MicrosoftATP.SoftwareVersion.version | String | Version number |
+| MicrosoftATP.SoftwareVersion.installations | Number | Installations number. |
+| MicrosoftATP.SoftwareVersion.vulnerabilities | Number | Number of vulnerabilities. |
+ 
+#### Command example
+
+```!microsoft-atp-list-software-version-distribution id=some_id```
+
+#### Context Example
+
+```json
+{
+   "MicrosoftATP": {
+       "SoftwareVersion": [
+           {
+               "installations": 2,
+               "version": "7.0.2.0",
+               "vulnerabilities": 7
+           },
+           {
+               "installations": 1,
+               "version": "6.2.4.0",
+               "vulnerabilities": 0
+           }
+       ]
+   }
+}
+```
+ 
+#### Human Readable Output
+ 
+>### Microsoft Defender ATP software version distribution:
+>
+>|version|installations|vulnerabilities|
+>|---|---|---|
+>| 7.0.2.0 | 2 | 7 |
+>| 6.2.4.0 | 1 | 0 |
+ 
+ 
+
+### microsoft-atp-list-machines-by-software
+
+---
+Retrieve a list of device references that has this software installed.
+ 
+ 
+#### Base Command
+ 
+`microsoft-atp-list-machines-by-software`
+
+#### Input
+ 
+| **Argument Name** | **Description** | **Required** |
+| --- | --- | --- |
+| id | Software ID. Use the !microsoft-atp-list-software command to get the ID. | Optional |
+ 
+ 
+#### Context Output
+ 
+| **Path** | **Type** | **Description** |
+| --- | --- | --- |
+| MicrosoftATP.SoftwareMachine.id | String | Machine identity. |
+| MicrosoftATP.SoftwareMachine.computerDnsName | String | Machine fully qualified name. |
+| MicrosoftATP.SoftwareMachine.osPlatform | String | Operating system platform. |
+| MicrosoftATP.SoftwareMachine.rbacGroupName | String | Machine group name. |
+| MicrosoftATP.SoftwareMachine.rbacGroupId | Number | Machine group ID. |
+ 
+#### Command example
+
+```!microsoft-atp-list-machines-by-software id=some_id```
+
+#### Context Example
+
+```json
+{
+   "MicrosoftATP": {
+       "SoftwareMachine": [
+           {
+               "computerDnsName": "some_dns_name_1",
+               "id": "1111111111111111111111111111111111111111",
+               "osPlatform": "WindowsServer2016",
+               "rbacGroupId": 1111,
+               "rbacGroupName": "UnassignedGroup"
+           },
+           {
+               "computerDnsName": "some_dns_name_2",
+               "id": "2222222222222222222222222222222222222222",
+               "osPlatform": "WindowsServer2016",
+               "rbacGroupId": 2222,
+               "rbacGroupName": "UnassignedGroup"
+           },
+           {
+               "computerDnsName": "some_dns_name_3",
+               "id": "3333333333333333333333333333333333333333",
+               "osPlatform": "Windows10",
+               "rbacGroupId": 3333,
+               "rbacGroupName": "UnassignedGroup"
+           }
+       ]
+   }
+}
+```
+ 
+#### Human Readable Output
+ 
+>### Microsoft Defender ATP list machines by software: some_id
+>
+>|id|computerDnsName|osPlatform|rbacGroupName|rbacGroupId|
+>|---|---|---|---|---|
+>| 1111111111111111111111111111111111111111 | some_dns_name_1 | WindowsServer2016 | UnassignedGroup | 1111 |
+>| 2222222222222222222222222222222222222222 | some_dns_name_2 | WindowsServer2016 | UnassignedGroup | 2222 |
+>| 3333333333333333333333333333333333333333 | some_dns_name_3 | Windows10 | UnassignedGroup | 3333 |
+ 
+
+### microsoft-atp-list-vulnerabilities-by-software
+
+---
+Retrieves a list of all the vulnerabilities affecting the organization per software.
+
+#### Base Command
+
+`microsoft-atp-list-vulnerabilities-by-software`
+
+#### Input
+
+| **Argument Name** | **Description** | **Required** |
+| --- | --- | --- |
+| id | Software ID. Use the !microsoft-atp-list-software command to get the ID. | Required |
+
+#### Context Output
+
+| **Path** | **Type** | **Description** |
+| --- | --- | --- |
+| MicrosoftATP.SoftwareCVE.id | String | Vulnerability ID. |
+| MicrosoftATP.SoftwareCVE.name | String | Vulnerability title. |
+| MicrosoftATP.SoftwareCVE.description | String | Vulnerability description. |
+| MicrosoftATP.SoftwareCVE.severity | String | Vulnerability severity. Possible values are: "Low", "Medium", "High", "Critical" |
+| MicrosoftATP.SoftwareCVE.cvssV3 | Number | CVSS v3 score. |
+| MicrosoftATP.SoftwareCVE.exposedMachines | Number | Number of exposed devices. |
+| MicrosoftATP.SoftwareCVE.publishedOn | Date | Date when vulnerability was published. Date format will be in ISO 8601 format or relational expressions like “7 days ago”. |
+| MicrosoftATP.SoftwareCVE.updatedOn | Date | Date when vulnerability was updated. Date format will be in ISO 8601 format or relational expressions like “7 days ago”. |
+| MicrosoftATP.SoftwareCVE.publicExploit | Boolean | Whether a public exploit exists for some of the vulnerabilities. |
+| MicrosoftATP.SoftwareCVE.exploitVerified | Boolean | Whether a public exploit exists. |
+| MicrosoftATP.SoftwareCVE.exploitInKit | Boolean | Whether the exploit is part of an exploit kit. |
+| MicrosoftATP.SoftwareCVE.exploitTypes | String | Exploit impact. Possible values are: "Local privilege escalation", "Denial of service", "Local". |
+| MicrosoftATP.SoftwareCVE.exploitUris | String | Exploit source URLs. |
+
+#### Command example
+
+```!microsoft-atp-list-vulnerabilities-by-software id=some_software```
+
+#### Context Example
+
+```json
+{
+  "CVE": [
+      {
+          "CVSS": {
+              "Score": 5.9
+          },
+          "Description": "This vulnerability affects the following vendors: vendor_1, vendor_2, vendor_3. To view more details about this vulnerability please visit the vendor website.",
+          "ID": "CVE-2222-22222",
+          "Modified": "2021-05-17T22:56:00Z",
+          "Published": "2021-05-17T22:56:00Z"
+      }
+  ],
+  "DBotScore": [
+      {
+          "Indicator": "CVE-2222-22222",
+          "Score": 0,
+          "Type": "cve",
+          "Vendor": "some_vendor"
+      }
+  ],
+  "MicrosoftATP": {
+      "SoftwareCVE": [
+          {
+              "cvssV3": 5.9,
+              "description": "This vulnerability affects the following vendors: vendor_1, vendor_2, vendor_3. To view more details about this vulnerability please visit the vendor website.",
+              "exploitInKit": false,
+              "exploitTypes": [],
+              "exploitUris": [],
+              "exploitVerified": false,
+              "exposedMachines": 2,
+              "id": "CVE-2222-22222",
+              "name": "CVE-2222-22222",
+              "publicExploit": false,
+              "publishedOn": "2021-05-17T22:56:00Z",
+              "severity": "Medium",
+              "updatedOn": "2021-05-17T22:56:00Z"
+          }
+      ]
+  }
+}
+```
+
+#### Human Readable Output
+>
+>### Microsoft Defender ATP vulnerability CCVE-2222-22222 by software: some_software
+>
+>|id|name|description|severity|cvssV3|publishedOn|updatedOn|exposedMachines|exploitVerified|publicExploit|
+>|---|---|---|---|---|---|---|---|---|---|
+>| CVE-2222-22222 | CVE-2222-22222 | This vulnerability affects the following vendors: vendor_1, vendor_2, vendor_3. To view more details about this vulnerability please visit the vendor website. | Medium | 5.9 | 2021-05-17T22:56:00Z | 2021-05-17T22:56:00Z | 2 | false | false |
+ 
+### microsoft-atp-list-vulnerabilities-by-machine
+
+---
+Retrieves a list of all the vulnerabilities affecting the organization per machine.
+
+#### Base Command
+
+`microsoft-atp-list-vulnerabilities-by-machine`
+
+#### Input
+
+| **Argument Name** | **Description** | **Required** |
+| --- | --- | --- |
+| machine_id | A comma-separated list of machine IDs used for getting the vulnerabilities. | Optional |
+| software_id | A comma-separated list of software IDs used for getting the vulnerabilities. | Optional |
+| cve_id | A comma-separated list of CVE IDs used for getting the vulnerabilities. | Optional |
+| product_name | A comma-separated list of product names used for getting the vulnerabilities. | Optional |
+| product_version | A comma-separated list of product versions used for getting the vulnerabilities. | Optional |
+| severity | A comma-separated list of vulnerability severities. Possible values are: "Low", "Medium", "High", "Critical". | Optional |
+| product_vendor | A comma-separated list of product vendors used for getting the vulnerabilities. | Optional |
+| limit | Maximum number of results to retrieve. Default is 25. | Optional |
+| offset | The number of items in the queried collection that are to be skipped and not included in the result. Default is 0. | Optional |
+
+#### Context Output
+
+| **Path** | **Type** | **Description** |
+| --- | --- | --- |
+| MicrosoftATP.MachineCVE.id | String | Vulnerability ID. |
+| MicrosoftATP.MachineCVE.cveId | String | CVE ID. |
+| MicrosoftATP.MachineCVE.machineId | String | Machine ID. |
+| MicrosoftATP.MachineCVE.fixingKbId | Unknown | Fixing Kb ID. |
+| MicrosoftATP.MachineCVE.productName | String | Product name. |
+| MicrosoftATP.MachineCVE.productVendor | String | Name of the product vendor. |
+| MicrosoftATP.MachineCVE.productVersion | String | Product version. |
+| MicrosoftATP.MachineCVE.severity | String | Vulnerability severity. Possible values are: "Low", "Medium", "High", "Critical". |
+
+#### Command example
+
+```!microsoft-atp-list-vulnerabilities-by-machine cve_id=CVE-1111-1111```
+
+#### Context Example
+
+```json
+{
+  "CVE": {
+      "CVSS": {},
+      "ID": "1111111111111111111111111111111111111111-_-CVE-1111-1111-_-some_vendor-_-some_name-_-11.11.11.11111111-_-"
+  },
+  "DBotScore": {
+      "Indicator": "1111111111111111111111111111111111111111-_-CVE-1111-1111-_-some_vendor-_-some_name-_-11.11.11.11111111-_-",
+      "Score": 0,
+      "Type": "cve",
+      "Vendor": "Microsoft Defender Advanced Threat Protection"
+  },
+  "MicrosoftATP": {
+      "MachineCVE": {
+          "cveId": "CVE-1111-1111",
+          "fixingKbId": null,
+          "id": "1111111111111111111111111111111111111111-_-CVE-1111-1111-_-some_vendor-_-some_name-_-11.11.11.11111111-_-",
+          "machineId": "1111111111111111111111111111111111111111",
+          "productName": "some_name",
+          "productVendor": "some_vendor",
+          "productVersion": "11.11.11.11111111",
+          "severity": "Medium"
+      }
+  }
+}
+```
+
+#### Human Readable Output
+>
+>### Microsoft Defender ATP vulnerability CVE-1111-1111:
+>
+>|id|cveId|machineId|productName|productVendor|productVersion|severity|
+>|---|---|---|---|---|---|---|
+>| 1111111111111111111111111111111111111111-_-CVE-1111-1111-_-some_vendor-_-some_name-_-11.11.11.11111111-_- | CVE-1111-1111 | 1111111111111111111111111111111111111111 | some_name | some_vendor | 11.11.11.11111111 | Medium |
+ 
+ 
+### microsoft-atp-list-vulnerabilities
+
+---
+Retrieves a list of all vulnerabilities.
+
+#### Base Command
+
+`microsoft-atp-list-vulnerabilities`
+
+#### Input
+
+| **Argument Name** | **Description** | **Required** |
+| --- | --- | --- |
+| id | Vulnerability ID. | Optional |
+| name_equal | Vulnerability title. | Optional |
+| name_contains | Vulnerability title. Does not work with another filter arguments. |Optional |
+| description_contains | Vulnerability description. Does not work with another filter arguments. | Optional |
+| published_on | Date when the vulnerability was published. Date format will be in ISO 8601 format or relational expressions like “7 days ago”. | Optional |
+| cvss | CVSS v3 score. | Optional |
+| severity | A comma-separated list of vulnerability severities. Possible values are: "Low", "Medium", "High", "Critical". | Optional |
+| updated_on | Date when the vulnerability was updated. Date format will be in ISO 8601 format or relational expressions like “7 days ago”. | Optional |
+| limit | Maximum number of results to retrieve. Default is 25. | Optional |
+| offset | The number of items in the queried collection that are to be skipped and not included in the result. Default is 0. | Optional |
+
+#### Context Output
+
+| **Path** | **Type** | **Description** |
+| --- | --- | --- |
+| MicrosoftATP.Vulnerability.id | String | Vulnerability ID. |
+| MicrosoftATP.Vulnerability.name | String | Vulnerability title. |
+| MicrosoftATP.Vulnerability.description | String | Vulnerability description. |
+| MicrosoftATP.Vulnerability.severity | String | Vulnerability severity. Possible values are: "Low", "Medium", "High", "Critical". |
+| MicrosoftATP.Vulnerability.cvssV3 | Number | CVSS v3 score. |
+| MicrosoftATP.Vulnerability.exposedMachines | Number | Number of exposed devices. |
+| MicrosoftATP.Vulnerability.publishedOn | Date | Date when the vulnerability was published. Date format will be in ISO 8601 format or relational expressions like “7 days ago”.
+| MicrosoftATP.Vulnerability.updatedOn | Date | Date when the vulnerability was updated. Date format will be in ISO 8601 format or relational expressions like “7 days ago”. |
+| MicrosoftATP.Vulnerability.publicExploit | Boolean | Whether the public exploit exists. |
+| MicrosoftATP.Vulnerability.exploitVerified | Boolean | Whether the exploit is verified to work. |
+| MicrosoftATP.Vulnerability.exploitInKit | Boolean | Whether the exploit is part of an exploit kit. |
+| MicrosoftATP.Vulnerability.exploitTypes | String | Exploit impact. Possible values are: "Local privilege escalation", "Denial of service", "Local". |
+| MicrosoftATP.Vulnerability.exploitUris | String | Exploit source URLs. |
+
+#### Command example
+
+```!microsoft-atp-list-vulnerabilities id="CVE-1111-1111"```
+
+#### Context Example
+
+```json
+{
+  "CVE": {
+      "CVSS": {
+          "Score": 6.5
+      },
+      "Description": "some_description.",
+      "ID": "CVE-1111-1111",
+      "Modified": "2002-09-10T00:00:00Z",
+      "Published": "2002-09-10T00:00:00Z"
+  },
+  "DBotScore": {
+      "Indicator": "CVE-1111-1111",
+      "Score": 0,
+      "Type": "cve",
+      "Vendor": "some_vendor"
+  },
+  "MicrosoftATP": {
+      "SoftwareCVE": {
+          "cvssV3": 6.5,
+          "description": "some_description.",
+          "exploitInKit": false,
+          "exploitTypes": [],
+          "exploitUris": [],
+          "exploitVerified": false,
+          "exposedMachines": 0,
+          "id": "CVE-1111-1111",
+          "name": "CVE-1111-1111",
+          "publicExploit": false,
+          "publishedOn": "2002-09-10T00:00:00Z",
+          "severity": "Medium",
+          "updatedOn": "2002-09-10T00:00:00Z"
+      }
+  }
+}
+```
+
+#### Human Readable Output
+>
+>### Microsoft Defender ATP vulnerabilities:
+>
+>|id|name|description|severity|publishedOn|updatedOn|exposedMachines|exploitVerified|publicExploit|cvssV3|
+>|---|---|---|---|---|---|---|---|---|---|
+>| CVE-1111-1111 | CVE-1111-1111 | some_description. | Medium | 2002-09-10T00:00:00Z | 2002-09-10T00:00:00Z | 0 | false | false | 6.5 |
+
+### microsoft-atp-list-missing-kb-by-software
+
+---
+Retrieves missing KBs (security updates) by software ID.
+ 
+ 
+#### Base Command
+ 
+`microsoft-atp-list-missing-kb-by-software`
+
+#### Input
+ 
+| **Argument Name** | **Description** | **Required** |
+| --- | --- | --- |
+| id | Software ID. Use the !microsoft-atp-list-software command to get the ID. | Required |
+ 
+ 
+#### Context Output
+ 
+| **Path** | **Type** | **Description** |
+| --- | --- | --- |
+| MicMicrosoftATP.SoftwareKB.id | String | Software ID. |
+| MicMicrosoftATP.SoftwareKB.name | String | Software name. |
+| MicMicrosoftATP.SoftwareKB.osBuild | Number | The operating system build number. |
+| MicMicrosoftATP.SoftwareKB.productsNames | String | Product names. |
+| MicMicrosoftATP.SoftwareKB.url | String | URL. |
+| MicMicrosoftATP.SoftwareKB.machineMissedOn | Number | Machine missed on. |
+| MicMicrosoftATP.SoftwareKB.cveAddressed | Number | CVE addressed. |
+ 
+#### Command example
+
+```!microsoft-atp-list-missing-kb-by-software id=some_id```
+
+#### Context Example
+
+```json
+{
+   "MicrosoftATP": {
+       "SoftwareKB": [
+           {
+               "cveAddressed": 2,
+               "id": "1111111",
+               "machineMissedOn": 1,
+               "name": "some_name_1",
+               "osBuild": 22222,
+               "productsNames": [
+                   "some_id"
+               ],
+               "url": "some_url_1"
+           },
+           {
+               "cveAddressed": 2,
+               "id": "2222222",
+               "machineMissedOn": 1,
+               "name": "some_name_2",
+               "osBuild": 22222,
+               "productsNames": [
+                   "some_id"
+               ],
+               "url": "some_url_2"
+           },
+       ]
+   }
+}
+```
+ 
+#### Human Readable Output
+ 
+>### Microsoft Defender ATP missing kb by software: some_id
+>
+>|id|name|osBuild|productsNames|url|machineMissedOn|cveAddressed|
+>|---|---|---|---|---|---|---|
+>| 1111111 | some_name_1 | 22222 | some_id | some_url_1 | 1 | 2 |
+>| 2222222 | some_name_2 | 22222 | some_id | some_url_2 | 1 | 2 |
+
+
+### microsoft-atp-generate-login-url
+
+---
+Generate the login url used for Authorization code flow.
+
+#### Base Command
+
+`microsoft-atp-generate-login-url`
+
+#### Input
+
+There are no input arguments for this command.
+
+#### Context Output
+
+There is no context output for this command.
+
+#### Command Example
+
+```microsoft-atp-generate-login-url```
+
+#### Human Readable Output
+
+>### Authorization instructions
+>
+>1. Click on the [login URL](https://login.microsoftonline.com) to sign in and grant Cortex XSOAR permissions for your Azure Service Management.
+You will be automatically redirected to a link with the following structure:
+```REDIRECT_URI?code=AUTH_CODE&session_state=SESSION_STATE```
+>2. Copy the `AUTH_CODE` (without the `code=` prefix, and the `session_state` parameter)
+and paste it in your instance configuration under the **Authorization code** parameter.
+
+
+### microsoft-atp-auth-reset
+
+***
+Run this command if for some reason you need to rerun the authentication process.
+
+#### Base Command
+
+`microsoft-atp-auth-reset`
+
+#### Input
+
+There are no input arguments for this command.
+
+#### Context Output
+
+There is no context output for this command.

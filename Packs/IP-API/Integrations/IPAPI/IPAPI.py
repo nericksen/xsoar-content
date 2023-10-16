@@ -1,9 +1,9 @@
+import demistomock as demisto  # noqa: F401
+from CommonServerPython import *  # noqa: F401
 import traceback
 from typing import Any, Dict, List
 
-import demistomock as demisto  # noqa: F401
 import urllib3
-from CommonServerPython import *  # noqa: F401
 
 # Disable insecure warnings
 urllib3.disable_warnings()
@@ -53,7 +53,30 @@ def ip_reputation_command(client: Client, args: Dict[str, Any]) -> List[CommandR
 
     ip_data = []
     for ip in ips:
-        ip_data.append(client.get_ip_reputation(ip))
+        # documentation of json api - https://ip-api.com/docs/api:json.
+        result = client.get_ip_reputation(ip)
+
+        dbot_score = Common.DBotScore(
+            indicator=ip,
+            indicator_type=DBotScoreType.IP,
+            score=0,
+            reliability=demisto.params().get('integrationReliability')
+        )
+
+        common_ip = Common.IP(
+            ip=ip,
+            dbot_score=dbot_score,
+            geo_country=result.get('country'),
+            region=result.get('regionName'),
+            geo_longitude=result.get('lon'),
+            geo_latitude=result.get('lat'),
+            organization_name=result.get('org')
+        )
+
+        command_res = CommandResults(indicator=common_ip)
+
+        command_results.append(command_res)
+        ip_data.append(result)
 
     readable_output = tableToMarkdown('IP-API', ip_data)
 
